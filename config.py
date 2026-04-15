@@ -10,11 +10,17 @@ MODEL = "anthropic/claude-sonnet-4-5"
 ALLOWED_ORIGINS = [
     "https://disciplinaria.app",
     "https://www.disciplinaria.app",
+    "https://disciplinaria-app.vercel.app",
     "http://localhost:3000",
     "http://localhost:5173",
+    "http://localhost:5500",
 ]
 
 NORMAS = {
+    # Valores enviados por el frontend
+    "ley_1123": "Ley 1123 de 2007 - Código Disciplinario del Abogado",
+    "ley_1952": "Ley 1952 de 2019 - Código General Disciplinario (vigente desde 2021)",
+    # Valores legacy / uso directo de la API
     "1123": "Ley 1123 de 2007 - Código Disciplinario del Abogado",
     "1952": "Ley 1952 de 2019 - Código General Disciplinario (vigente desde 2021)",
     "734": "Ley 734 de 2002 - Código Disciplinario Único (complementario)",

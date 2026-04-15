@@ -4,13 +4,15 @@ from typing import Literal
 
 class AnalisisRequest(BaseModel):
     texto: str = Field(..., min_length=50, description="Texto completo del documento jurídico disciplinario")
-    norma: Literal["1123", "1952", "734"] = Field(..., description="Código de la norma aplicable")
+    norma: Literal["ley_1123", "ley_1952", "1123", "1952", "734"] = Field(
+        ..., description="Norma aplicable: 'ley_1123' o 'ley_1952' (frontend) / '1123', '1952', '734' (API directa)"
+    )
 
     model_config = {
         "json_schema_extra": {
             "example": {
                 "texto": "FALLO DISCIPLINARIO. Expediente N.° 2023-XXX...",
-                "norma": "1952",
+                "norma": "ley_1952",
             }
         }
     }
