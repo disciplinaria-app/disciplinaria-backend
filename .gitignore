@@ -1,0 +1,52 @@
+# Entorno virtual
+.env
+.env.*
+!.env.example
+.venv/
+venv/
+env/
+ENV/
+
+# Python bytecode
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyo
+
+# Distribución / empaquetado
+*.egg-info/
+dist/
+build/
+*.egg
+MANIFEST
+.eggs/
+wheels/
+
+# pytest / cobertura
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+.tox/
+
+# mypy / type checkers
+.mypy_cache/
+.dmypy.json
+dmypy.json
+.pytype/
+
+# IDEs
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# macOS
+.DS_Store
+
+# Railway / deployment
+.railway/
+
+# Claude Code
+.claude/
