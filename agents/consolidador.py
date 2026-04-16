@@ -1,12 +1,13 @@
 """
 Consolidador — Combina los resultados de los 5 agentes en un análisis unificado.
-Pondera los puntajes, deduplica hallazgos y genera el resumen ejecutivo final
-mediante una llamada adicional al LLM.
+Pondera los puntajes, agrega todos los hallazgos (re-asigna IDs secuenciales,
+ordena por nivel_severidad desc) y genera el resumen ejecutivo final mediante
+una llamada adicional al LLM.
 """
 
 import asyncio
 from .base_agent import llamar_openrouter, extraer_json_respuesta
-from models.schemas import ResultadoAgente, AnalisisResponse, Estadisticas
+from models.schemas import Hallazgo, ResultadoAgente, AnalisisResponse, Estadisticas
 from config import NORMAS
 
 SYSTEM_CONSOLIDADOR = """Eres el consolidador de un sistema multiagente de revisión de documentos
@@ -47,12 +48,36 @@ def _puntaje_ponderado(resultados: list[ResultadoAgente]) -> float:
     return round(puntaje_acumulado / total_peso, 1)
 
 
+def _agregar_hallazgos(resultados: list[ResultadoAgente]) -> list[Hallazgo]:
+    """Recoge todos los hallazgos de los 5 agentes, los ordena por severidad desc
+    y les reasigna IDs secuenciales globales."""
+    todos: list[Hallazgo] = []
+    for r in resultados:
+        todos.extend(r.hallazgos)
+
+    # Ordenar: alta (3) → media (2) → baja (1)
+    todos.sort(key=lambda h: h.nivel_severidad, reverse=True)
+
+    # Reasignar IDs secuenciales
+    return [
+        Hallazgo(**{**h.model_dump(), "id": i})
+        for i, h in enumerate(todos, 1)
+    ]
+
+
 def _construir_estadisticas(
-    resultados: list[ResultadoAgente], norma: str
+    resultados: list[ResultadoAgente],
+    norma: str,
+    hallazgos: list[Hallazgo],
 ) -> Estadisticas:
     puntajes = [r.puntaje for r in resultados]
-    exitosos = [r for r in resultados if r.puntaje > 0 or r.resumen and "Error" not in r.resumen]
+    exitosos = [r for r in resultados if r.puntaje > 0 or (r.resumen and "Error" not in r.resumen)]
     distribucion = {r.agente: r.puntaje for r in resultados}
+    conteo_severidad = {
+        "alta": sum(1 for h in hallazgos if h.severidad == "alta"),
+        "media": sum(1 for h in hallazgos if h.severidad == "media"),
+        "baja": sum(1 for h in hallazgos if h.severidad == "baja"),
+    }
     return Estadisticas(
         total_agentes=len(resultados),
         agentes_exitosos=len(exitosos),
@@ -61,15 +86,19 @@ def _construir_estadisticas(
         puntaje_minimo=min(puntajes) if puntajes else 0,
         norma_aplicada=NORMAS.get(norma, norma),
         distribucion_puntajes=distribucion,
+        conteo_severidad=conteo_severidad,
     )
 
 
-async def _generar_resumen_ejecutivo(resultados: list[ResultadoAgente], norma: str) -> tuple[str, list[str], list[str], list[str]]:
-    """Llama al LLM para generar resumen, errores, fortalezas y recomendaciones consolidados."""
+async def _generar_resumen_ejecutivo(
+    resultados: list[ResultadoAgente], norma: str
+) -> tuple[str, list[str], list[str], list[str]]:
+    """Llama al LLM para generar resumen, errores top, fortalezas y recomendaciones consolidados."""
     agentes_txt = "\n\n".join(
         f"### {r.agente} (Puntaje: {r.puntaje}/100)\n"
         f"Resumen: {r.resumen}\n"
-        f"Errores: {'; '.join(r.errores) or 'Ninguno'}\n"
+        f"Hallazgos de alta severidad: "
+        f"{'; '.join(h.error for h in r.hallazgos if h.severidad == 'alta') or 'Ninguno'}\n"
         f"Fortalezas: {'; '.join(r.fortalezas) or 'Ninguna'}\n"
         f"Recomendaciones: {'; '.join(r.recomendaciones) or 'Ninguna'}"
         for r in resultados
@@ -82,14 +111,14 @@ disciplinario colombiano bajo la {NORMAS.get(norma, norma)}:
 Genera una consolidación inteligente que:
 1. Integre los hallazgos más importantes de todos los agentes
 2. Elimine duplicados y agrupe hallazgos relacionados
-3. Priorice los errores más graves
+3. Priorice los errores más graves (alta severidad primero)
 4. Formule recomendaciones accionables y específicas
 
 Responde con este JSON exacto:
 ```json
 {{
   "resumen": "<resumen ejecutivo consolidado de 3-5 oraciones>",
-  "errores": ["<top error 1>", "<top error 2>", "<top error 3>", "<top error 4>", "<top error 5>"],
+  "errores": ["<error crítico 1>", "<error crítico 2>", "<error crítico 3>", "<error crítico 4>", "<error crítico 5>"],
   "fortalezas": ["<fortaleza 1>", "<fortaleza 2>", "<fortaleza 3>"],
   "recomendaciones": ["<recomendación 1>", "<recomendación 2>", "<recomendación 3>", "<recomendación 4>"]
 }}
@@ -103,19 +132,27 @@ Responde con este JSON exacto:
             datos.get("fortalezas", []),
             datos.get("recomendaciones", []),
         )
-    except Exception as exc:
-        # Fallback: agregar resultados crudos
-        todos_errores = list({e for r in resultados for e in r.errores})[:5]
-        todas_fortalezas = list({f for r in resultados for f in r.fortalezas})[:3]
-        todas_recs = list({rec for r in resultados for rec in r.recomendaciones})[:4]
+    except Exception:
+        # Fallback sin LLM: construir desde hallazgos directamente
+        errores_top = list(dict.fromkeys(
+            h.error for r in resultados
+            for h in r.hallazgos if h.severidad == "alta"
+        ))[:5]
+        todas_fortalezas = list(dict.fromkeys(
+            f for r in resultados for f in r.fortalezas
+        ))[:3]
+        todas_recs = list(dict.fromkeys(
+            rec for r in resultados for rec in r.recomendaciones
+        ))[:4]
         resumen = " | ".join(r.resumen for r in resultados if r.resumen)[:500]
-        return resumen, todos_errores, todas_fortalezas, todas_recs
+        return resumen, errores_top, todas_fortalezas, todas_recs
 
 
 async def consolidar(resultados: list[ResultadoAgente], norma: str) -> AnalisisResponse:
     puntaje = _puntaje_ponderado(resultados)
     nivel = _calcular_nivel(puntaje)
-    estadisticas = _construir_estadisticas(resultados, norma)
+    hallazgos = _agregar_hallazgos(resultados)
+    estadisticas = _construir_estadisticas(resultados, norma, hallazgos)
 
     resumen, errores, fortalezas, recomendaciones = await _generar_resumen_ejecutivo(
         resultados, norma
@@ -126,6 +163,7 @@ async def consolidar(resultados: list[ResultadoAgente], norma: str) -> AnalisisR
         nivel=nivel,
         resumen=resumen,
         errores=errores,
+        hallazgos=hallazgos,
         fortalezas=fortalezas,
         recomendaciones=recomendaciones,
         estadisticas=estadisticas,
