@@ -77,3 +77,4 @@ class AnalisisResponse(BaseModel):
     recomendaciones: list[str]
     estadisticas: Estadisticas
     detalle_agentes: list[ResultadoAgente]
+    archivo_id: str | None = Field(None, description="ID del .docx procesado disponible en /descargar/{id}")
