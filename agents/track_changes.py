@@ -11,6 +11,7 @@ Agentes 4-5 (FONDO ARGUMENTATIVO, NORMATIVO):
 
 import copy
 import io
+import re
 import zipfile
 from datetime import datetime, timezone
 from lxml import etree
@@ -32,12 +33,35 @@ def _now() -> str:
 # ── Búsqueda de texto ─────────────────────────────────────────────────────────
 
 def _find_paragraph(doc: Document, texto: str) -> int | None:
+    """
+    Busca el párrafo que contiene 'texto'.
+    1. Coincidencia exacta de subcadena.
+    2. Coincidencia de las primeras palabras significativas (maneja
+       truncamiento, comillas o diferencias menores del AI).
+    Nunca retorna el último párrafo como fallback — eso lo decide el llamador.
+    """
     needle = texto.lower().strip()
     if not needle:
         return None
+
+    # 1. Coincidencia exacta
     for i, para in enumerate(doc.paragraphs):
         if needle in para.text.lower():
             return i
+
+    # 2. Fuzzy: palabras significativas (>3 chars) de los primeros 80 caracteres
+    palabras = [w for w in re.sub(r"[^\w\s]", " ", needle[:80]).split() if len(w) > 3][:6]
+    if len(palabras) >= 2:
+        best_idx, best_hits = None, 0
+        for i, para in enumerate(doc.paragraphs):
+            pt = para.text.lower()
+            hits = sum(1 for w in palabras if w in pt)
+            if hits > best_hits:
+                best_hits, best_idx = hits, i
+        # Exige al menos la mitad de las palabras clave
+        if best_idx is not None and best_hits >= max(2, len(palabras) // 2):
+            return best_idx
+
     return None
 
 
@@ -173,32 +197,90 @@ def insertar_track_change(doc: Document, para_idx: int, ubicacion: str,
 
 # ── Comentarios al margen ─────────────────────────────────────────────────────
 
-def _add_comment_ref(para_el, comment_id: int) -> None:
-    """Añade commentRangeStart/End y commentReference al párrafo."""
-    start = OxmlElement("w:commentRangeStart")
-    start.set(qn("w:id"), str(comment_id))
-    end = OxmlElement("w:commentRangeEnd")
-    end.set(qn("w:id"), str(comment_id))
+def _add_comment_ref(para_el, comment_id: int, ubicacion: str = "") -> None:
+    """
+    Ancla commentRangeStart / commentRangeEnd / commentReference al run
+    específico que contiene 'ubicacion'.
 
-    ref_r = OxmlElement("w:r")
-    ref_rpr = OxmlElement("w:rPr")
-    ref_style = OxmlElement("w:rStyle")
-    ref_style.set(qn("w:val"), "CommentReference")
-    ref_rpr.append(ref_style)
-    ref_r.append(ref_rpr)
-    ref = OxmlElement("w:commentReference")
-    ref.set(qn("w:id"), str(comment_id))
-    ref_r.append(ref)
+    Estructura OOXML requerida:
+        <w:commentRangeStart w:id="N"/>
+        <w:r>...<w:t>texto con el error</w:t></w:r>
+        <w:commentRangeEnd w:id="N"/>
+        <w:r><w:rPr><w:rStyle w:val="CommentReference"/></w:rPr>
+             <w:commentReference w:id="N"/></w:r>
 
+    commentRangeEnd y commentReference DEBEN ser adyacentes y ubicados
+    justo después del run anotado — de lo contrario Word los agrupa al final.
+    """
+    def _make_start():
+        el = OxmlElement("w:commentRangeStart")
+        el.set(qn("w:id"), str(comment_id))
+        return el
+
+    def _make_end():
+        el = OxmlElement("w:commentRangeEnd")
+        el.set(qn("w:id"), str(comment_id))
+        return el
+
+    def _make_ref_run():
+        r = OxmlElement("w:r")
+        rpr = OxmlElement("w:rPr")
+        sty = OxmlElement("w:rStyle")
+        sty.set(qn("w:val"), "CommentReference")
+        rpr.append(sty)
+        r.append(rpr)
+        cref = OxmlElement("w:commentReference")
+        cref.set(qn("w:id"), str(comment_id))
+        r.append(cref)
+        return r
+
+    # ── Intentar anclar al run exacto que contiene ubicacion ─────────────────
+    target_run = None
+    if ubicacion:
+        needle = ubicacion.lower().strip()
+        rmap = _run_map(para_el)
+        combined = "".join(t for _, _, _, t in rmap)
+        pos = combined.lower().find(needle)
+        if pos != -1:
+            # Run donde COMIENZA el fragmento anotado
+            for s, e, r_el, _ in rmap:
+                if s <= pos < e:
+                    target_run = r_el
+                    break
+
+    if target_run is not None:
+        parent = target_run.getparent()
+        idx = list(parent).index(target_run)
+        # Insertar start justo antes del run, end y ref justo después
+        parent.insert(idx, _make_start())          # idx   → start
+        # target_run ahora está en idx + 1
+        parent.insert(idx + 2, _make_end())        # idx+2 → end
+        parent.insert(idx + 3, _make_ref_run())    # idx+3 → commentReference
+        return
+
+    # ── Fallback: anclar al primer run disponible del párrafo ────────────────
     children = list(para_el)
     first_run_idx = next(
         (i for i, c in enumerate(children)
          if etree.QName(c).localname in ("r", "hyperlink", "ins", "del")),
-        len(children) - 1,
+        None,
     )
-    para_el.insert(first_run_idx, start)
-    para_el.append(end)
-    para_el.append(ref_r)
+    if first_run_idx is None:
+        # Párrafo vacío: solo appender al final
+        para_el.append(_make_start())
+        para_el.append(_make_end())
+        para_el.append(_make_ref_run())
+        return
+
+    para_el.insert(first_run_idx, _make_start())
+    # Recalcular índice tras insert
+    children = list(para_el)
+    last_run_idx = max(
+        i for i, c in enumerate(children)
+        if etree.QName(c).localname in ("r", "hyperlink", "ins", "del")
+    )
+    para_el.insert(last_run_idx + 1, _make_end())
+    para_el.insert(last_run_idx + 2, _make_ref_run())
 
 
 def _build_comment_xml(comment_id: int, autor: str, texto: str, fecha: str) -> str:
@@ -323,10 +405,14 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
 
             para_idx = _find_paragraph(doc, ubicacion) if ubicacion else None
             if para_idx is None:
-                para_idx = max(0, len(doc.paragraphs) - 1)
+                # Fallback: primer párrafo con contenido — nunca el último
+                para_idx = next(
+                    (i for i, p in enumerate(doc.paragraphs) if p.text.strip()),
+                    0,
+                )
 
             try:
-                _add_comment_ref(doc.paragraphs[para_idx]._p, comment_id)
+                _add_comment_ref(doc.paragraphs[para_idx]._p, comment_id, ubicacion)
                 comment_xmls.append(
                     _build_comment_xml(comment_id, autor, texto_comentario, fecha)
                 )
