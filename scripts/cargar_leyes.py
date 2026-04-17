@@ -1,21 +1,22 @@
 """
-Script de carga de artículos de las Leyes 1123/2007 y 1952/2019 en Supabase
+Script de carga de articulos de las Leyes 1123/2007 y 1952/2019 en Supabase
 con embeddings vectoriales (text-embedding-3-small, 1536 dims).
 
 Uso:
     pip install supabase openai python-docx python-dotenv pypdf
     python scripts/cargar_leyes.py
 
-Variables de entorno requeridas (.env en la raíz del proyecto):
+Variables de entorno requeridas (.env en la raiz del proyecto):
     SUPABASE_URL
-    SUPABASE_SERVICE_KEY
+    SUPABASE_SERVICE_KEY    <- JWT service_role de Supabase (empieza con eyJ)
     OPENAI_API_KEY
 
-Archivos esperados en scripts/:
-    LEY_1123_DE_2007.pdf   (PDF con texto seleccionable)   ← o .doc HTML UTF-16
-    L1952-2019__CGD_.docx  (Word estándar)
+Archivos requeridos en scripts/:
+    L1123-2007 (CDA).docx   <- Ley 1123/2007, formato Word (.docx)
+    L1952-2019 (CGD).docx   <- Ley 1952/2019, formato Word (.docx)
 """
 
+import io
 import os
 import re
 import sys
@@ -23,7 +24,10 @@ import time
 from pathlib import Path
 from dotenv import load_dotenv
 
-# Cargar .env desde la raíz del proyecto (un nivel arriba de scripts/)
+# Forzar UTF-8 en stdout (evita errores cp1252 en Windows)
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
+# Cargar .env desde la raiz del proyecto
 load_dotenv(Path(__file__).parent.parent / ".env")
 
 try:
@@ -32,17 +36,20 @@ try:
     from docx import Document
 except ImportError as e:
     print(f"Dependencia faltante: {e}")
-    print("Ejecuta: pip install supabase openai python-docx python-dotenv pypdf")
+    print("Ejecuta: pip install supabase openai python-docx python-dotenv")
     sys.exit(1)
 
-# ── Clientes ─────────────────────────────────────────────────────────────────
+# ── Clientes ──────────────────────────────────────────────────────────────────
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 OPENAI_KEY   = os.getenv("OPENAI_API_KEY", "")
 
 if not all([SUPABASE_URL, SUPABASE_KEY, OPENAI_KEY]):
-    print("❌  Faltan variables de entorno. Revisa el archivo .env en la raíz del proyecto.")
-    print("    Necesarias: SUPABASE_URL, SUPABASE_SERVICE_KEY, OPENAI_API_KEY")
+    print("[ERROR] Faltan variables de entorno.")
+    print("  Crea .env en la raiz del proyecto con:")
+    print("  SUPABASE_URL=https://xxxx.supabase.co")
+    print("  SUPABASE_SERVICE_KEY=eyJ...  (service_role JWT, no la anon key)")
+    print("  OPENAI_API_KEY=sk-...")
     sys.exit(1)
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -62,7 +69,7 @@ def generar_embedding(texto: str) -> list[float]:
 
 
 def insertar_articulo(ley: str, numero: str, titulo: str, contenido: str) -> None:
-    emb = generar_embedding(f"Artículo {numero} - {titulo}: {contenido}")
+    emb = generar_embedding(f"Articulo {numero} - {titulo}: {contenido}")
     supabase.table("articulos_legales").upsert(
         {
             "ley": ley,
@@ -75,16 +82,20 @@ def insertar_articulo(ley: str, numero: str, titulo: str, contenido: str) -> Non
     ).execute()
 
 
+def texto_desde_docx(ruta: Path) -> str:
+    doc = Document(str(ruta))
+    return "\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+
 def extraer_articulos(texto: str) -> list[tuple[str, str, str]]:
-    """Extrae (numero, titulo, contenido) de un texto normativo plano."""
+    """Extrae (numero, titulo, contenido) de texto normativo plano."""
     patron = (
-        r"Art[íi]culo\s+(\d+[°o]?[a-z]?)\.?\s*"   # número
-        r"([^.\n]{0,150}\.?)"                        # título opcional
-        r"(.+?)(?=Art[íi]culo\s+\d+[°o]?|\Z)"       # contenido
+        r"Art[íi]culo\s+(\d+[°o]?[a-z]?)\.?\s*"
+        r"([^.\n]{0,150}\.?)"
+        r"(.+?)(?=Art[íi]culo\s+\d+[°o]?|\Z)"
     )
-    matches = re.findall(patron, texto, re.DOTALL | re.IGNORECASE)
     resultado = []
-    for numero, titulo, contenido in matches:
+    for numero, titulo, contenido in re.findall(patron, texto, re.DOTALL | re.IGNORECASE):
         numero    = numero.strip().rstrip("°o")
         titulo    = titulo.strip()[:150]
         contenido = contenido.strip()[:4000]
@@ -98,107 +109,57 @@ def cargar_articulos(ley: str, articulos: list[tuple[str, str, str]], esperados:
     for numero, titulo, contenido in articulos:
         try:
             insertar_articulo(ley, numero, titulo, contenido)
-            print(f"  [Ley {ley}] Artículo {numero} — OK")
+            print(f"  [Ley {ley}] Articulo {numero} -- OK")
             cargados += 1
-            time.sleep(0.3)   # evitar rate-limit de OpenAI embeddings
+            time.sleep(0.3)  # evitar rate-limit de OpenAI embeddings
         except Exception as exc:
-            print(f"  [Ley {ley}] Artículo {numero} — ERROR: {exc}")
-    print(f"✅  Ley {ley}: {cargados} artículos cargados (esperados ~{esperados})\n")
+            print(f"  [Ley {ley}] Articulo {numero} -- ERROR: {exc}")
+    print(f"  => Ley {ley}: {cargados} articulos cargados (esperados ~{esperados})\n")
 
 
 # ── Ley 1123/2007 ─────────────────────────────────────────────────────────────
 
-def _texto_desde_pdf(ruta: Path) -> str:
-    try:
-        from pypdf import PdfReader
-    except ImportError:
-        try:
-            from PyPDF2 import PdfReader
-        except ImportError:
-            print("  ⚠️  pypdf no instalado. Ejecuta: pip install pypdf")
-            return ""
-    reader = PdfReader(str(ruta))
-    paginas = []
-    for page in reader.pages:
-        t = page.extract_text()
-        if t:
-            paginas.append(t)
-    return "\n".join(paginas)
-
-
-def _texto_desde_doc_html(ruta: Path) -> str:
-    with open(ruta, encoding="utf-16") as f:
-        content = f.read()
-    texto = re.sub(r"<[^>]+>", " ", content)
-    texto = re.sub(r"&nbsp;",  " ", texto)
-    texto = re.sub(r"&amp;",   "&", texto)
-    texto = re.sub(r"&lt;",    "<", texto)
-    texto = re.sub(r"&gt;",    ">", texto)
-    return re.sub(r"\s+", " ", texto).strip()
-
-
 def procesar_ley_1123() -> None:
-    print("📖  Procesando Ley 1123 de 2007...")
-
-    texto = ""
-    ruta_pdf = SCRIPTS_DIR / "LEY_1123_DE_2007.pdf"
-    ruta_doc = SCRIPTS_DIR / "LEY_1123_DE_2007.doc"
-
-    if ruta_pdf.exists():
-        print(f"  → Leyendo PDF: {ruta_pdf.name}")
-        texto = _texto_desde_pdf(ruta_pdf)
-    elif ruta_doc.exists():
-        print(f"  → Leyendo DOC HTML (UTF-16): {ruta_doc.name}")
-        texto = _texto_desde_doc_html(ruta_doc)
-    else:
-        print("  ⚠️  No se encontró LEY_1123_DE_2007.pdf ni .doc — saltando")
+    print("Procesando Ley 1123 de 2007...")
+    ruta = SCRIPTS_DIR / "L1123-2007 (CDA).docx"
+    if not ruta.exists():
+        print(f"  [WARN] No se encontro: {ruta.name}")
+        print("  Convierte L1123-2007 (CDA).doc a .docx: Word > Guardar como > Documento Word")
         return
-
-    if not texto:
-        print("  ⚠️  No se pudo extraer texto del archivo — saltando")
-        return
-
+    print(f"  -> Leyendo: {ruta.name}")
+    texto = texto_desde_docx(ruta)
     articulos = extraer_articulos(texto)
     if not articulos:
-        print("  ⚠️  No se encontraron artículos en el texto extraído")
+        print("  [WARN] No se encontraron articulos en el archivo")
         return
-
+    print(f"  -> {len(articulos)} articulos encontrados. Subiendo a Supabase...")
     cargar_articulos("1123", articulos, esperados=104)
 
 
 # ── Ley 1952/2019 ─────────────────────────────────────────────────────────────
 
 def procesar_ley_1952() -> None:
-    print("📖  Procesando Ley 1952 de 2019...")
-
-    # Acepta el nombre canónico o cualquier variante L1952*.docx
-    ruta = SCRIPTS_DIR / "L1952-2019__CGD_.docx"
+    print("Procesando Ley 1952 de 2019...")
+    ruta = SCRIPTS_DIR / "L1952-2019 (CGD).docx"
     if not ruta.exists():
-        candidatos = sorted(SCRIPTS_DIR.glob("L1952*.docx"))
-        if candidatos:
-            ruta = candidatos[0]
-        else:
-            print("  ⚠️  No se encontró L1952-2019__CGD_.docx — saltando")
-            return
-
-    print(f"  → Leyendo DOCX: {ruta.name}")
-    doc   = Document(str(ruta))
-    texto = "\n".join(p.text for p in doc.paragraphs if p.text.strip())
-
+        print(f"  [WARN] No se encontro: {ruta.name}")
+        return
+    print(f"  -> Leyendo: {ruta.name}")
+    texto = texto_desde_docx(ruta)
     articulos = extraer_articulos(texto)
     if not articulos:
-        print("  ⚠️  No se encontraron artículos en el archivo")
+        print("  [WARN] No se encontraron articulos en el archivo")
         return
-
+    print(f"  -> {len(articulos)} articulos encontrados. Subiendo a Supabase...")
     cargar_articulos("1952", articulos, esperados=263)
 
 
 # ── Punto de entrada ──────────────────────────────────────────────────────────
 
 if __name__ == "__main__":
-    print("═" * 58)
-    print("  DISCIPLINAR[IA] — Carga de biblioteca normativa")
-    print("═" * 58)
+    print("=" * 58)
+    print("  DISCIPLINAR[IA] -- Carga de biblioteca normativa")
+    print("=" * 58)
     procesar_ley_1123()
     procesar_ley_1952()
-    print("🏁  Carga completa.")
+    print("Carga completa.")
