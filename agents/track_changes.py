@@ -262,13 +262,22 @@ def _add_comment_ref(para_el, comment_id: int, ubicacion: str = "") -> None:
                     break
 
     if target_run is not None:
-        parent = target_run.getparent()
-        idx = list(parent).index(target_run)
-        # Insertar start justo antes del run, end y ref justo después
-        parent.insert(idx, _make_start())          # idx   → start
-        # target_run ahora está en idx + 1
-        parent.insert(idx + 2, _make_end())        # idx+2 → end
-        parent.insert(idx + 3, _make_ref_run())    # idx+3 → commentReference
+        # Subir hasta encontrar el hijo directo del w:p.
+        # Si target_run está dentro de w:hyperlink u otro contenedor,
+        # insertar dentro de ese contenedor haría que Word desplace
+        # los marcadores al final del documento.
+        anchor = target_run
+        while etree.QName(anchor.getparent()).localname != "p":
+            anchor = anchor.getparent()
+            if anchor.getparent() is None:
+                break  # seguridad: no debería ocurrir
+
+        parent = anchor.getparent()  # siempre es el w:p
+        idx = list(parent).index(anchor)
+        parent.insert(idx, _make_start())      # idx   → commentRangeStart
+        # anchor ahora está en idx + 1
+        parent.insert(idx + 2, _make_end())    # idx+2 → commentRangeEnd
+        parent.insert(idx + 3, _make_ref_run())# idx+3 → commentReference
         return
 
     # ── Fallback: anclar al primer run disponible del párrafo ────────────────
