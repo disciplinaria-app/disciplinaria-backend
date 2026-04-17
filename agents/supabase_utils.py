@@ -29,19 +29,19 @@ REQUISITO: Ejecutar este SQL en el Editor SQL de Supabase antes de usar:
 import httpx
 from config import (
     SUPABASE_URL, SUPABASE_SERVICE_KEY,
-    OPENAI_API_KEY, EMBEDDING_MODEL, EMBEDDING_DIM,
+    OPENROUTER_API_KEY, OPENROUTER_BASE_URL, EMBEDDING_MODEL,
 )
 
-_SUPABASE_DISPONIBLE = bool(SUPABASE_URL and SUPABASE_SERVICE_KEY and OPENAI_API_KEY)
+_SUPABASE_DISPONIBLE = bool(SUPABASE_URL and SUPABASE_SERVICE_KEY and OPENROUTER_API_KEY)
 
 
 async def _generar_embedding(texto: str) -> list[float]:
-    """Genera un embedding con OpenAI text-embedding-3-small."""
+    """Genera un embedding via OpenRouter (openai/text-embedding-3-small)."""
     async with httpx.AsyncClient(timeout=30.0) as client:
         resp = await client.post(
-            "https://api.openai.com/v1/embeddings",
+            f"{OPENROUTER_BASE_URL}/embeddings",
             headers={
-                "Authorization": f"Bearer {OPENAI_API_KEY}",
+                "Authorization": f"Bearer {OPENROUTER_API_KEY}",
                 "Content-Type": "application/json",
             },
             json={"model": EMBEDDING_MODEL, "input": texto[:8000]},

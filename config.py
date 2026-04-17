@@ -8,9 +8,8 @@ OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1"
 MODEL = "anthropic/claude-sonnet-4-5"
 
-# ── OpenAI (embeddings para Supabase) ───────────────────────────────────────
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-EMBEDDING_MODEL = "text-embedding-3-small"
+# ── Embeddings (via OpenRouter) ─────────────────────────────────────────────
+EMBEDDING_MODEL = "openai/text-embedding-3-small"
 EMBEDDING_DIM = 1536
 
 # ── Supabase (biblioteca normativa vectorial) ────────────────────────────────

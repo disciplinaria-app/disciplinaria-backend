@@ -7,9 +7,9 @@ Uso:
     python scripts/cargar_leyes.py
 
 Variables de entorno requeridas (.env en la raiz del proyecto):
+    OPENROUTER_API_KEY      <- clave de OpenRouter (sk-or-v1-...)
     SUPABASE_URL
     SUPABASE_SERVICE_KEY    <- JWT service_role de Supabase (empieza con eyJ)
-    OPENAI_API_KEY
 
 Archivos requeridos en scripts/:
     L1123-2007 (CDA).docx   <- Ley 1123/2007, formato Word (.docx)
@@ -32,28 +32,30 @@ load_dotenv(Path(__file__).parent.parent / ".env")
 
 try:
     from supabase import create_client
-    from openai import OpenAI
     from docx import Document
+    import httpx as _httpx
 except ImportError as e:
     print(f"Dependencia faltante: {e}")
-    print("Ejecuta: pip install supabase openai python-docx python-dotenv")
+    print("Ejecuta: pip install supabase python-docx python-dotenv httpx")
     sys.exit(1)
 
 # ── Clientes ──────────────────────────────────────────────────────────────────
-SUPABASE_URL = os.getenv("SUPABASE_URL", "")
-SUPABASE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
-OPENAI_KEY   = os.getenv("OPENAI_API_KEY", "")
+OPENROUTER_KEY = os.getenv("OPENROUTER_API_KEY", "")
+SUPABASE_URL   = os.getenv("SUPABASE_URL", "")
+SUPABASE_KEY   = os.getenv("SUPABASE_SERVICE_KEY", "")
 
-if not all([SUPABASE_URL, SUPABASE_KEY, OPENAI_KEY]):
+if not all([OPENROUTER_KEY, SUPABASE_URL, SUPABASE_KEY]):
     print("[ERROR] Faltan variables de entorno.")
     print("  Crea .env en la raiz del proyecto con:")
+    print("  OPENROUTER_API_KEY=sk-or-v1-...")
     print("  SUPABASE_URL=https://xxxx.supabase.co")
     print("  SUPABASE_SERVICE_KEY=eyJ...  (service_role JWT, no la anon key)")
-    print("  OPENAI_API_KEY=sk-...")
     sys.exit(1)
 
 supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-openai_c = OpenAI(api_key=OPENAI_KEY)
+
+OPENROUTER_EMBED_URL = "https://openrouter.ai/api/v1/embeddings"
+EMBEDDING_MODEL      = "openai/text-embedding-3-small"
 
 SCRIPTS_DIR = Path(__file__).parent
 
@@ -61,11 +63,17 @@ SCRIPTS_DIR = Path(__file__).parent
 # ── Utilidades ────────────────────────────────────────────────────────────────
 
 def generar_embedding(texto: str) -> list[float]:
-    resp = openai_c.embeddings.create(
-        model="text-embedding-3-small",
-        input=texto[:8000],
+    resp = _httpx.post(
+        OPENROUTER_EMBED_URL,
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_KEY}",
+            "Content-Type": "application/json",
+        },
+        json={"model": EMBEDDING_MODEL, "input": texto[:8000]},
+        timeout=30.0,
     )
-    return resp.data[0].embedding
+    resp.raise_for_status()
+    return resp.json()["data"][0]["embedding"]
 
 
 def insertar_articulo(ley: str, numero: str, titulo: str, contenido: str) -> None:
