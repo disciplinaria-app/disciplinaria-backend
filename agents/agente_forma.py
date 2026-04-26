@@ -28,12 +28,12 @@ LT_MAX_MATCHES = 10     # cap para no saturar los hallazgos
 
 # Mapeo categoría LT → módulo CEDIA y severidad
 _CAT_MAP = {
-    "TYPOS":        ("CEDIA-007", "alta"),
-    "GRAMMAR":      ("CEDIA-008", "media"),
-    "PUNCTUATION":  ("CEDIA-010", "media"),
-    "TYPOGRAPHY":   ("CEDIA-011", "baja"),
-    "STYLE":        ("CEDIA-018", "baja"),
-    "REDUNDANCY":   ("CEDIA-018", "baja"),
+    "TYPOS":        ("Ortografía",             "alta"),
+    "GRAMMAR":      ("Gramática/Concordancia",  "alta"),
+    "PUNCTUATION":  ("CEDIA-007",               "media"),
+    "TYPOGRAPHY":   ("Tipografía",              "baja"),
+    "STYLE":        ("CEDIA-018",               "baja"),
+    "REDUNDANCY":   ("CEDIA-018",               "baja"),
 }
 _NIVEL = {"alta": 3, "media": 2, "baja": 1}
 
