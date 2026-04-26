@@ -16,6 +16,10 @@ EMBEDDING_DIM = 1536
 SUPABASE_URL = os.getenv("SUPABASE_URL", "")
 SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 
+# ── LanguageTool Premium (Agente 1) ─────────────────────────────────────────
+LT_USERNAME = os.getenv("LT_USERNAME", "")
+LT_API_KEY  = os.getenv("LT_API_KEY", "")
+
 # ── CORS ─────────────────────────────────────────────────────────────────────
 ALLOWED_ORIGINS = [
     "https://disciplinaria.app",

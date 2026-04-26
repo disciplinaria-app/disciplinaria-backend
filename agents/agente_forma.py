@@ -4,10 +4,122 @@ Cubre: CEDIA-007 (ortografía/tildes), CEDIA-008 (concordancia), CEDIA-010 (punt
        CEDIA-011 (espaciado), CEDIA-017 (signos sin cerrar), CEDIA-018 (redundancias/
        repetición morfológica) + M19 patrones 1 y 2 (número sin sustantivo, sustantivo
        sin número).
+
+Fuentes combinadas (en paralelo):
+  1. LLM (OpenRouter/Claude) — criterios CEDIA específicos del derecho disciplinario
+  2. LanguageTool Premium    — ortografía, gramática y puntuación de cobertura amplia
+
+Los hallazgos de ambas fuentes se fusionan y deduplicam antes de retornar.
 """
 
+import asyncio
+import httpx
+
 from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
-from models.schemas import ResultadoAgente
+from config import LT_USERNAME, LT_API_KEY
+from models.schemas import Hallazgo, ResultadoAgente
+
+# ── Configuración ─────────────────────────────────────────────────────────────
+
+LT_ENDPOINT  = "https://api.languagetool.org/v2/check"
+LT_TIMEOUT   = httpx.Timeout(30.0, connect=10.0)
+LT_MAX_CHARS = 40_000   # Premium soporta textos largos
+LT_MAX_MATCHES = 10     # cap para no saturar los hallazgos
+
+# Mapeo categoría LT → módulo CEDIA y severidad
+_CAT_MAP = {
+    "TYPOS":        ("CEDIA-007", "alta"),
+    "GRAMMAR":      ("CEDIA-008", "media"),
+    "PUNCTUATION":  ("CEDIA-010", "media"),
+    "TYPOGRAPHY":   ("CEDIA-011", "baja"),
+    "STYLE":        ("CEDIA-018", "baja"),
+    "REDUNDANCY":   ("CEDIA-018", "baja"),
+}
+_NIVEL = {"alta": 3, "media": 2, "baja": 1}
+
+# Reglas LT que no aportan valor en textos jurídicos (falsos positivos frecuentes)
+_REGLAS_IGNORADAS = {
+    "WHITESPACE_RULE",
+    "UNPAIRED_BRACKETS",   # LT detecta bien, pero lo cubre CEDIA-017 del LLM
+    "ES_QUESTION_MARK",    # textos legales raramente usan interrogación
+}
+
+# ── LanguageTool ──────────────────────────────────────────────────────────────
+
+async def _consultar_languagetool(texto: str) -> list[dict]:
+    """
+    Llama a LanguageTool Premium y convierte los matches al formato
+    dict compatible con _construir_hallazgos() de base_agent.
+
+    Retorna lista vacía si LT no está configurado o falla.
+    """
+    if not LT_USERNAME or not LT_API_KEY:
+        return []
+
+    try:
+        async with httpx.AsyncClient(timeout=LT_TIMEOUT) as client:
+            resp = await client.post(
+                LT_ENDPOINT,
+                data={
+                    "text":     texto[:LT_MAX_CHARS],
+                    "language": "es",
+                    "username": LT_USERNAME,
+                    "apiKey":   LT_API_KEY,
+                },
+            )
+            resp.raise_for_status()
+            matches = resp.json().get("matches", [])
+    except Exception:
+        return []   # degradación graceful: LT falla → solo CEDIA
+
+    hallazgos = []
+    for m in matches:
+        rule_id  = m.get("rule", {}).get("id", "")
+        if rule_id in _REGLAS_IGNORADAS:
+            continue
+
+        cat_id   = m.get("rule", {}).get("category", {}).get("id", "")
+        modulo, severidad = _CAT_MAP.get(cat_id, ("LT", "baja"))
+
+        # Texto exacto del error en su contexto
+        ctx    = m.get("context", {})
+        ctx_txt = ctx.get("text", "")
+        o, l   = ctx.get("offset", 0), ctx.get("length", 0)
+        ubicacion = ctx_txt[o : o + l].strip() or ctx_txt.strip()
+
+        # Primera sugerencia disponible
+        replacements = m.get("replacements", [])
+        correccion   = replacements[0]["value"] if replacements else ""
+
+        hallazgos.append({
+            "modulo":       modulo,
+            "ubicacion":    ubicacion[:80],
+            "error":        m.get("message", ""),
+            "justificacion": m.get("rule", {}).get("description", "Regla LanguageTool"),
+            "correccion":   correccion,
+            "severidad":    severidad,
+        })
+
+        if len(hallazgos) >= LT_MAX_MATCHES:
+            break
+
+    return hallazgos
+
+
+def _deduplicar(cedia: list[dict], lt: list[dict]) -> list[dict]:
+    """
+    Elimina hallazgos de LT que ya están cubiertos por CEDIA (misma ubicacion).
+    Prioriza CEDIA sobre LT en caso de solapamiento.
+    """
+    ubicaciones_cedia = {h["ubicacion"].lower().strip() for h in cedia}
+    lt_nuevos = [
+        h for h in lt
+        if h["ubicacion"].lower().strip() not in ubicaciones_cedia
+    ]
+    return cedia + lt_nuevos
+
+
+# ── Prompt CEDIA ──────────────────────────────────────────────────────────────
 
 SYSTEM = """Eres CEDIA-FORMA, corrector especializado en documentos jurídicos disciplinarios colombianos.
 Tu misión es detectar exclusivamente errores de escritura objetivos y verificables según RAE 2010.
@@ -94,11 +206,28 @@ Responde con este JSON exacto (máximo 12 hallazgos):
 ```"""
 
 
+# ── Punto de entrada ──────────────────────────────────────────────────────────
+
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
     prompt = PLANTILLA.format(texto=texto[:8000])
+
+    # Llamar LLM y LanguageTool en paralelo
+    llm_task = llamar_openrouter(SYSTEM, prompt)
+    lt_task  = _consultar_languagetool(texto)
+
     try:
-        raw = await llamar_openrouter(SYSTEM, prompt)
-        datos = extraer_json_respuesta(raw)
-        return construir_resultado("FORMA", datos)
+        raw, lt_hallazgos = await asyncio.gather(llm_task, lt_task)
     except Exception as exc:
         return construir_resultado_error("FORMA", exc)
+
+    try:
+        datos = extraer_json_respuesta(raw)
+    except Exception as exc:
+        return construir_resultado_error("FORMA", exc)
+
+    # Combinar: CEDIA del LLM + novedades de LanguageTool
+    cedia_hallazgos = datos.get("hallazgos", [])
+    combinados = _deduplicar(cedia_hallazgos, lt_hallazgos)
+    datos["hallazgos"] = combinados
+
+    return construir_resultado("FORMA", datos)
