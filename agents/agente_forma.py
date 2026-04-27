@@ -65,6 +65,7 @@ async def _consultar_languagetool(texto: str) -> list[dict]:
                     "language": "es",
                     "username": LT_USERNAME,
                     "apiKey":   LT_API_KEY,
+                    "level":    "picky",
                 },
             )
             resp.raise_for_status()
