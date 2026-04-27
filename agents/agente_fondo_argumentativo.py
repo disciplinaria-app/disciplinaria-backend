@@ -9,8 +9,41 @@ Arquitectura de tres niveles:
 Cubre: CEDIA-013 (hipótesis como prueba) + M17 completo.
 """
 
+import re
+
 from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
 from models.schemas import ResultadoAgente
+
+
+# ── Extracción de sección CONSIDERACIONES ─────────────────────────────────────
+
+_RE_CONSID = re.compile(
+    r"(?:^|\n)\s*(?:C[oO][nN][sS][iI][dD][eE][rR][aA][cC][iI][oO][nN][eE][sS]"
+    r"|CONSIDERACIONES|C\s*O\s*N\s*S\s*I\s*D\s*E\s*R\s*A\s*C\s*I\s*O\s*N\s*E\s*S)"
+    r"\s*[:\n]",
+    re.IGNORECASE | re.MULTILINE,
+)
+_RE_SIGUIENTE_SECCION = re.compile(
+    r"(?:^|\n)\s*(?:RESUELVE|DECIDE|PARTE\s+RESOLUTIVA|SE\s+RESUELVE|ORDEN[AE]|SANCIONES?)\s*[:\n]",
+    re.IGNORECASE | re.MULTILINE,
+)
+
+
+def _extraer_consideraciones(texto: str) -> str:
+    """
+    Localiza el bloque CONSIDERACIONES del fallo y lo retorna como string.
+    Si no existe la sección, retorna el texto completo (comportamiento seguro).
+    """
+    m_inicio = _RE_CONSID.search(texto)
+    if not m_inicio:
+        return texto  # sin sección identificable → pasar todo
+
+    inicio = m_inicio.end()
+    m_fin = _RE_SIGUIENTE_SECCION.search(texto, inicio)
+    fin = m_fin.start() if m_fin else len(texto)
+
+    seccion = texto[inicio:fin].strip()
+    return seccion if seccion else texto
 
 SYSTEM = """Eres CEDIA-FONDO, experto en argumentación jurídica disciplinaria colombiana con
 formación en lógica formal y teoría de la argumentación (modelo toulminiano).
@@ -20,8 +53,11 @@ Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
 
 PLANTILLA = """Analiza el siguiente documento jurídico disciplinario colombiano.
 
-DOCUMENTO:
+DOCUMENTO COMPLETO:
 {texto}
+
+SECCIÓN CONSIDERACIONES (extraída para análisis argumentativo profundo):
+{consideraciones}
 
 ═══════════════════════════════════════════════════
 NIVEL 1 — LÓGICA FORMAL
@@ -76,9 +112,32 @@ RESPALDO (backing): ¿el soporte fáctico-jurídico es suficiente o es genérico
 - Error: respaldo genérico ("la jurisprudencia uniforme") sin cita específica
 - Error: respaldo insuficiente para la gravedad de la sanción impuesta
 
-REFUTACIÓN ANTICIPADA: ¿el documento responde los descargos del disciplinado?
-- Error crítico (alta): el documento ignora completamente los descargos
-- Error medio: los descargos se mencionan pero no se rebaten con argumentos
+VERIFICACIÓN EXPLÍCITA DE LOS 5 ELEMENTOS TOULMIN en la sección CONSIDERACIONES:
+Analiza cada uno de estos elementos de forma independiente y reporta si está
+presente, ausente o deficiente:
+
+  1. ASEVERACIÓN (claim): tesis principal del fallo — ¿formulada explícitamente?
+     Si está implícita o dispersa → hallazgo de severidad MEDIA.
+
+  2. FUNDAMENTOS (grounds): hechos probatorios que sostienen la aseveración.
+     Si se usan quejas, versiones libres o informes sin corroboración como
+     fundamentos (CEDIA-013) → hallazgo de severidad ALTA.
+
+  3. GARANTÍA (warrant): norma o principio jurídico que conecta fundamentos
+     con aseveración. Si la norma citada no corresponde al supuesto de hecho
+     → hallazgo de severidad ALTA.
+
+  4. RESPALDO (backing): soporte doctrinal/jurisprudencial específico.
+     Si es genérico ("la jurisprudencia uniforme" sin cita) → severidad MEDIA.
+
+  5. RESPUESTA A DESCARGOS (rebuttal): ¿la SECCIÓN CONSIDERACIONES aborda
+     y rebate los argumentos defensivos del disciplinado?
+     - Si los descargos no aparecen mencionados en ninguna forma → ALTA
+       (el fallo es vulnerable a recurso por violación del debido proceso).
+     - Si se mencionan pero no se rebaten con argumentos concretos → MEDIA.
+     - Si se rebaten adecuadamente → no reportar.
+     IMPORTANTE: busca frases como "el disciplinado alegó", "la defensa sostiene",
+     "en sus descargos", "el disciplinado manifestó" — su ausencia es señal de alerta.
 
 ═══════════════════════════════════════════════════
 NIVEL 3 — ENFOQUE ARGUMENTATIVO
@@ -103,6 +162,12 @@ CRITERIOS DE SEVERIDAD CNDJ:
 - Media: debilidad argumentativa que puede ser explotada por la defensa
 - Baja: imprecisión argumental sin consecuencia procesal directa
 
+REGLA OBLIGATORIA PARA EL CAMPO "correccion":
+Si la corrección propuesta introduce un adverbio en -mente y el párrafo del
+fragmento ya contiene uno, usa en su lugar una construcción adverbial equivalente
+(con + sustantivo abstracto). Ejemplo: párrafo tiene "lógicamente" → corrección
+no puede proponer "necesariamente" → proponer "de forma necesaria".
+
 Responde con este JSON exacto (máximo 12 hallazgos):
 ```json
 {{
@@ -125,7 +190,11 @@ Responde con este JSON exacto (máximo 12 hallazgos):
 
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
-    prompt = PLANTILLA.format(texto=texto[:9000])
+    consideraciones = _extraer_consideraciones(texto)
+    prompt = PLANTILLA.format(
+        texto=texto[:9000],
+        consideraciones=consideraciones[:4000],   # sección focalizada
+    )
     try:
         raw = await llamar_openrouter(SYSTEM, prompt, max_tokens=5000)
         datos = extraer_json_respuesta(raw)

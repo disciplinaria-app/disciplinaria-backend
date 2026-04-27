@@ -121,6 +121,12 @@ CRITERIOS DE SEVERIDAD CNDJ:
          incompleta que debilita la fundamentación
 - Baja: cita parcialmente incompleta corregible sin afectar el fondo
 
+REGLA OBLIGATORIA PARA EL CAMPO "correccion":
+Si la corrección propuesta introduce un adverbio en -mente y el párrafo del
+fragmento ya contiene uno, usa en su lugar una construcción adverbial equivalente
+(con + sustantivo abstracto). Ejemplo: párrafo tiene "normativamente" → corrección
+no puede proponer "específicamente" → proponer "de forma específica".
+
 Responde con este JSON exacto (máximo 10 hallazgos):
 ```json
 {{{{

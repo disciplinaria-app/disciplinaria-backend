@@ -70,6 +70,12 @@ CRITERIOS DE SEVERIDAD CNDJ:
 - Media: debilita la contundencia judicial o es inconsistente con el registro forense
 - Baja: error de estilo corregible sin impacto sustancial
 
+REGLA OBLIGATORIA PARA EL CAMPO "correccion":
+Si la corrección propuesta introduce un adverbio en -mente y el párrafo del
+fragmento ya contiene uno, usa en su lugar una construcción adverbial equivalente
+(con + sustantivo abstracto). Ejemplo: párrafo tiene "técnicamente" → corrección
+no puede proponer "correctamente" → proponer "con corrección".
+
 Responde con este JSON exacto (máximo 10 hallazgos):
 ```json
 {{

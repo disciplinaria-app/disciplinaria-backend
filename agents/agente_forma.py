@@ -13,6 +13,7 @@ Los hallazgos de ambas fuentes se fusionan y deduplicam antes de retornar.
 """
 
 import asyncio
+import re
 import httpx
 
 from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
@@ -120,6 +121,64 @@ def _deduplicar(cedia: list[dict], lt: list[dict]) -> list[dict]:
     return cedia + lt_nuevos
 
 
+# ── Análisis determinista de folios (CEDIA-012) ───────────────────────────────
+
+_RE_MENTE  = re.compile(r"\b\w+mente\b", re.IGNORECASE)
+_RE_GERUND = re.compile(r"\b\w+[aáe]ndo\b", re.IGNORECASE)   # -ando / -endo
+_PALABRAS_POR_FOLIO = 300
+
+
+def _analizar_folios(texto: str) -> list[dict]:
+    """
+    Divide el texto en folios virtuales (~300 palabras) y detecta:
+    - Más de 1 adverbio en -mente por folio  (CEDIA-012, severidad media)
+    - Más de 1 gerundio por folio            (CEDIA-005, severidad baja)
+
+    Retorna lista de hallazgos en formato dict compatible con _deduplicar().
+    Esta función es determinista: no usa LLM ni APIs externas.
+    """
+    palabras = texto.split()
+    hallazgos: list[dict] = []
+    folio = 1
+
+    for inicio in range(0, len(palabras), _PALABRAS_POR_FOLIO):
+        chunk = " ".join(palabras[inicio : inicio + _PALABRAS_POR_FOLIO])
+
+        adverbios = _RE_MENTE.findall(chunk)
+        if len(adverbios) > 1:
+            primeros = ", ".join(adverbios[:3])
+            hallazgos.append({
+                "modulo":        "CEDIA-012",
+                "ubicacion":     primeros[:80],
+                "error":         (
+                    f"Folio {folio}: {len(adverbios)} adverbios en -mente "
+                    f"({primeros}). Máximo permitido: 1 por folio."
+                ),
+                "justificacion": "CEDIA-012: máximo 1 adverbio en -mente por página (≈300 palabras).",
+                "correccion":    "Reemplazar los adverbios en -mente adicionales por construcciones con 'con + sustantivo'.",
+                "severidad":     "media",
+            })
+
+        gerundios = _RE_GERUND.findall(chunk)
+        if len(gerundios) > 1:
+            primeros_g = ", ".join(gerundios[:3])
+            hallazgos.append({
+                "modulo":        "CEDIA-005",
+                "ubicacion":     primeros_g[:80],
+                "error":         (
+                    f"Folio {folio}: {len(gerundios)} gerundios "
+                    f"({primeros_g}). Máximo recomendado: 1 por folio."
+                ),
+                "justificacion": "CEDIA-005: saturación de gerundios debilita el registro jurídico-forense.",
+                "correccion":    "Sustituir los gerundios adicionales por verbos conjugados o cláusulas de infinitivo.",
+                "severidad":     "baja",
+            })
+
+        folio += 1
+
+    return hallazgos
+
+
 # ── Prompt CEDIA ──────────────────────────────────────────────────────────────
 
 SYSTEM = """Eres CEDIA-FORMA, corrector especializado en documentos jurídicos disciplinarios colombianos.
@@ -186,6 +245,22 @@ CRITERIOS DE SEVERIDAD CNDJ:
 - Media: debilita argumentación o genera ambigüedad interpretable por la defensa
 - Baja: error de forma corregible sin impacto en el fondo
 
+REGLAS OBLIGATORIAS PARA EL CAMPO "correccion":
+  1. RAÍZ MORFOLÓGICA: la corrección NO puede contener la misma raíz léxica
+     que la palabra errónea que reemplaza. Si la única corrección posible
+     comparte raíz, propón una construcción alternativa sin esa raíz.
+     Ejemplo: "contactar/contactarlo" → no corregir como "hacer contacto" (raíz
+     CONTACT presente) → corregir como "comunicarse con él".
+  2. ADVERBIOS EN -mente: si el párrafo del fragmento ya contiene un adverbio
+     en -mente, la corrección NO puede introducir otro adverbio en -mente.
+     Usa en su lugar una construcción adverbial (con + sustantivo abstracto).
+     Ejemplo: párrafo tiene "jurídicamente" → corrección propuesta "claramente"
+     → cambiar a "con claridad".
+  3. REDUNDANCIA TEMPORAL: "el día lunes" → corregir SOLO como "el lunes"
+     (no como "el día 17" ni ninguna variante que agregue información nueva).
+     "en horas de la mañana" → reemplazar por la hora específica si está
+     disponible en el texto; si no → "en la mañana".
+
 Responde con este JSON exacto (máximo 12 hallazgos):
 ```json
 {{
@@ -212,7 +287,7 @@ Responde con este JSON exacto (máximo 12 hallazgos):
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
     prompt = PLANTILLA.format(texto=texto[:8000])
 
-    # Llamar LLM y LanguageTool en paralelo
+    # Llamar LLM y LanguageTool en paralelo; analizar folios determinísticamente
     llm_task = llamar_openrouter(SYSTEM, prompt)
     lt_task  = _consultar_languagetool(texto)
 
@@ -226,9 +301,15 @@ async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
     except Exception as exc:
         return construir_resultado_error("FORMA", exc)
 
-    # Combinar: CEDIA del LLM + novedades de LanguageTool
+    # Hallazgos deterministas de folios (sin LLM, siempre confiables)
+    folio_hallazgos = _analizar_folios(texto)
+
+    # Combinar: CEDIA del LLM + novedades de LanguageTool + análisis de folios
     cedia_hallazgos = datos.get("hallazgos", [])
     combinados = _deduplicar(cedia_hallazgos, lt_hallazgos)
+    # Los hallazgos de folio tienen ubicacion distinta (nombre del adverbio/gerundio),
+    # pero pueden solaparse; usar deduplicar nuevamente para seguridad.
+    combinados = _deduplicar(combinados, folio_hallazgos)
     datos["hallazgos"] = combinados
 
     return construir_resultado("FORMA", datos)

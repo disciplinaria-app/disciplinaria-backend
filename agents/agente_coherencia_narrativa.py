@@ -81,6 +81,12 @@ CRITERIOS DE SEVERIDAD CNDJ:
 - Media: debilita la narrativa o crea ambigüedad interpretable por la defensa
 - Baja: imprecisión sin impacto en el fondo
 
+REGLA OBLIGATORIA PARA EL CAMPO "correccion":
+Si la corrección propuesta introduce un adverbio en -mente y el párrafo del
+fragmento ya contiene uno, usa en su lugar una construcción adverbial equivalente
+(con + sustantivo abstracto). Ejemplo: párrafo tiene "claramente" → corrección
+no puede proponer "expresamente" → proponer "de forma expresa".
+
 Responde con este JSON exacto (máximo 10 hallazgos):
 ```json
 {{

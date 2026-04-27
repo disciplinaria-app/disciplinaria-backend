@@ -430,21 +430,18 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
             texto_comentario = "\n".join(lineas)
 
             para_idx = _find_paragraph(doc, ubicacion) if ubicacion else None
-            if para_idx is None:
-                # Fallback: primer párrafo con contenido — nunca el último
-                para_idx = next(
-                    (i for i, p in enumerate(doc.paragraphs) if p.text.strip()),
-                    0,
-                )
-
-            try:
-                _add_comment_ref(doc.paragraphs[para_idx]._p, comment_id, ubicacion)
-                comment_xmls.append(
-                    _build_comment_xml(comment_id, autor, texto_comentario, fecha)
-                )
-                comment_id += 1
-            except Exception:
-                pass  # nunca interrumpir la exportación por un solo comentario
+            # Si no se localiza el párrafo, omitir el comentario completamente.
+            # NUNCA anclar a párrafo incorrecto: un comentario mal ubicado es
+            # más perjudicial que un comentario ausente.
+            if para_idx is not None:
+                try:
+                    _add_comment_ref(doc.paragraphs[para_idx]._p, comment_id, ubicacion)
+                    comment_xmls.append(
+                        _build_comment_xml(comment_id, autor, texto_comentario, fecha)
+                    )
+                    comment_id += 1
+                except Exception:
+                    pass  # nunca interrumpir la exportación por un solo comentario
 
     # Guardar documento con track changes
     buf = io.BytesIO()
