@@ -29,6 +29,9 @@ class Hallazgo(BaseModel):
     correccion: str = Field(..., description="Redacción corregida o sugerencia concreta")
     severidad: Literal["alta", "media", "baja"]
     nivel_severidad: int = Field(..., description="3=alta · 2=media · 1=baja — para ordenar")
+    # Campos exclusivos de hallazgos LanguageTool — None en hallazgos del LLM
+    lt_offset: int | None = Field(None, description="Offset del error en el texto plano enviado a LT")
+    lt_length: int | None = Field(None, description="Longitud del token erróneo en texto plano")
 
     model_config = {
         "json_schema_extra": {

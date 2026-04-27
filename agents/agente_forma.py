@@ -94,12 +94,16 @@ async def _consultar_languagetool(texto: str) -> list[dict]:
         correccion   = replacements[0]["value"] if replacements else ""
 
         hallazgos.append({
-            "modulo":       modulo,
-            "ubicacion":    ubicacion[:80],
-            "error":        m.get("message", ""),
+            "modulo":        modulo,
+            "ubicacion":     ubicacion[:80],
+            "error":         m.get("message", ""),
             "justificacion": m.get("rule", {}).get("description", "Regla LanguageTool"),
-            "correccion":   correccion,
-            "severidad":    severidad,
+            "correccion":    correccion,
+            "severidad":     severidad,
+            # Posición exacta en el texto plano enviado a LT — permite
+            # localizar el párrafo con precisión absoluta en track_changes.py
+            "lt_offset":     m.get("offset"),
+            "lt_length":     m.get("length"),
         })
 
         if len(hallazgos) >= LT_MAX_MATCHES:

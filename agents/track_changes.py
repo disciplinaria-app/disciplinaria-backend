@@ -30,6 +30,44 @@ def _now() -> str:
     return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
+# ── Mapa de offsets LT ───────────────────────────────────────────────────────
+
+def _build_para_offset_map(doc: Document) -> list[tuple[int, int, int]]:
+    """
+    Reconstruye el mismo texto plano que main.py extrae del .docx:
+        texto = "\\n".join(p.text for p in doc.paragraphs if p.text.strip())
+
+    Retorna una lista ordenada de (offset_inicio, offset_fin, para_idx_en_doc)
+    para cada párrafo no vacío. Permite mapear un offset LT al párrafo exacto
+    sin búsqueda aproximada.
+    """
+    result: list[tuple[int, int, int]] = []
+    pos = 0
+    for i, para in enumerate(doc.paragraphs):
+        if not para.text.strip():
+            continue
+        text = para.text
+        result.append((pos, pos + len(text), i))
+        pos += len(text) + 1  # +1 por el "\\n" del join en main.py
+    return result
+
+
+def _find_paragraph_by_offset(
+    offset_map: list[tuple[int, int, int]], lt_offset: int
+) -> int | None:
+    """
+    Retorna el índice docx del párrafo que contiene la posición lt_offset,
+    o None si el offset cae fuera del rango del documento.
+    La lista está ordenada, así que se detiene en el primer elemento posterior.
+    """
+    for start, end, para_idx in offset_map:
+        if start <= lt_offset < end:
+            return para_idx
+        if start > lt_offset:
+            break
+    return None
+
+
 # ── Búsqueda de texto ─────────────────────────────────────────────────────────
 
 def _find_paragraph(doc: Document, texto: str) -> int | None:
@@ -381,6 +419,13 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
     """
     Recibe bytes de .docx + lista de Hallazgo.
     Retorna bytes del .docx con track changes y comentarios insertados.
+
+    Estrategia de localización de párrafo (por orden de prioridad):
+      1. Hallazgos de LanguageTool con lt_offset → mapa de offsets exacto
+         (misma lógica de extracción de texto que main.py)
+      2. Resto de hallazgos → búsqueda aproximada por texto (fuzzy)
+      3. Si ninguna encuentra el párrafo → comentario/track change se omite
+         (nunca anclar al párrafo equivocado)
     """
     doc = Document(io.BytesIO(docx_bytes))
     rev_id = 200
@@ -388,36 +433,54 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
     comment_xmls: list[str] = []
     fecha = _now()
 
+    # Mapa LT offset → párrafo (construido una sola vez)
+    offset_map = _build_para_offset_map(doc)
+
     for h in hallazgos:
         ubicacion = (h.ubicacion or "").strip()
         correccion = (h.correccion or "").strip()
-        error = (h.error or "").strip()
-        modulo = (h.modulo or "").strip()
-        agente = h.agente
+        error     = (h.error or "").strip()
+        modulo    = (h.modulo or "").strip()
+        agente    = h.agente
         severidad = h.severidad
+        lt_offset = getattr(h, "lt_offset", None)
 
         if not error and not ubicacion:
             continue
 
         autor = f"DISCIPLINAR[IA] — {agente} [{modulo}]"
+
+        # ── Localizar párrafo objetivo (una sola vez por hallazgo) ───────────
+        if lt_offset is not None:
+            # LT: posición exacta en el texto plano → párrafo determinista
+            para_idx = _find_paragraph_by_offset(offset_map, lt_offset)
+        else:
+            # LLM / folios: búsqueda aproximada por texto
+            para_idx = _find_paragraph(doc, ubicacion) if ubicacion else None
+        # Si no se encuentra el párrafo, el hallazgo se omite completamente.
+        # Un comentario o track change en el párrafo equivocado es peor
+        # que no insertarlo.
+        if para_idx is None:
+            continue
+
         inserted_track = False
 
-        # Agentes 1-3: intentar track change
+        # ── Agentes 1-3: intentar track change ──────────────────────────────
         if (agente in AGENTES_TRACK
                 and ubicacion and correccion
                 and ubicacion.lower() != correccion.lower()):
-            para_idx = _find_paragraph(doc, ubicacion)
-            if para_idx is not None:
-                try:
-                    inserted_track = insertar_track_change(
-                        doc, para_idx, ubicacion, correccion, autor, rev_id
-                    )
-                    if inserted_track:
-                        rev_id += 2
-                except Exception:
-                    inserted_track = False
+            try:
+                inserted_track = insertar_track_change(
+                    doc, para_idx, ubicacion, correccion, autor, rev_id
+                )
+                if inserted_track:
+                    rev_id += 2
+            except Exception:
+                inserted_track = False
 
-        # Agentes 4-5 siempre comentario; agentes 1-3 comentario si track falló
+        # ── Comentario al margen ─────────────────────────────────────────────
+        # Agentes 4-5 siempre comentario.
+        # Agentes 1-3: comentario si el track change no pudo insertarse.
         if not inserted_track:
             sev_tag = {"alta": "[ALTA]", "media": "[MEDIA]", "baja": "[BAJA]"}.get(
                 severidad, ""
@@ -429,19 +492,14 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
                 lineas.append(f"Sugerencia: {correccion}")
             texto_comentario = "\n".join(lineas)
 
-            para_idx = _find_paragraph(doc, ubicacion) if ubicacion else None
-            # Si no se localiza el párrafo, omitir el comentario completamente.
-            # NUNCA anclar a párrafo incorrecto: un comentario mal ubicado es
-            # más perjudicial que un comentario ausente.
-            if para_idx is not None:
-                try:
-                    _add_comment_ref(doc.paragraphs[para_idx]._p, comment_id, ubicacion)
-                    comment_xmls.append(
-                        _build_comment_xml(comment_id, autor, texto_comentario, fecha)
-                    )
-                    comment_id += 1
-                except Exception:
-                    pass  # nunca interrumpir la exportación por un solo comentario
+            try:
+                _add_comment_ref(doc.paragraphs[para_idx]._p, comment_id, ubicacion)
+                comment_xmls.append(
+                    _build_comment_xml(comment_id, autor, texto_comentario, fecha)
+                )
+                comment_id += 1
+            except Exception:
+                pass  # nunca interrumpir la exportación por un comentario fallido
 
     # Guardar documento con track changes
     buf = io.BytesIO()

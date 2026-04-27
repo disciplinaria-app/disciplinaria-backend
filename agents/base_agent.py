@@ -57,6 +57,10 @@ def _construir_hallazgos(nombre_agente: str, raw_hallazgos: list[dict]) -> list[
         sev = str(h.get("severidad", "baja")).lower()
         if sev not in ("alta", "media", "baja"):
             sev = "baja"
+        # lt_offset / lt_length solo existen en hallazgos de LanguageTool;
+        # para los del LLM el dict no los incluye → get() retorna None.
+        raw_offset = h.get("lt_offset")
+        raw_length = h.get("lt_length")
         hallazgos.append(Hallazgo(
             id=i,
             modulo=str(h.get("modulo", "M0")),
@@ -67,6 +71,8 @@ def _construir_hallazgos(nombre_agente: str, raw_hallazgos: list[dict]) -> list[
             correccion=str(h.get("correccion", "")),
             severidad=sev,
             nivel_severidad=_nivel_severidad(sev),
+            lt_offset=int(raw_offset) if raw_offset is not None else None,
+            lt_length=int(raw_length) if raw_length is not None else None,
         ))
     return hallazgos
 
