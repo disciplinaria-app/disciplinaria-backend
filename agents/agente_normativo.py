@@ -35,6 +35,104 @@ _NORMA_CANONICA = {
     "734":      "734",
 }
 
+_LEYES_CON_AÑO = {"1123": "2007", "1952": "2019", "734": "2002", "270": "1996", "906": "2004"}
+_RE_CITA_LEY_MIN = re.compile(r'\bley\s+\d{3,4}\b')
+_RE_ARTICULO_SIN_TILDE = re.compile(r'\barticulo\b')
+_RE_ARTICULO_SIN_GRADO = re.compile(r'\b(art[íi]culo)\s+(\d+)(?![°o\d])', re.IGNORECASE)
+_RE_NUMERAL_SIN_GRADO = re.compile(r'\bnumeral\s+(\d+)(?![°o\d])', re.IGNORECASE)
+_RE_ABREVIATURA_CITA = re.compile(r'\b(art|num|lit|par)\.\s*\d+', re.IGNORECASE)
+_RE_LITERAL_SIN_PAREN = re.compile(r'\bliteral\s+([a-zA-Z])(?!\))', re.IGNORECASE)
+_RE_LEY_SIN_AÑO = re.compile(r'\bLey\s+(\d{3,4})(?!\s+de\s+\d{4})\b')
+
+
+def _verificar_formato_citas_normativas(texto: str) -> list[dict]:
+    """Detecta errores de formato en la estructura canónica de citas normativas."""
+    muestra = texto[:8000]
+    hallazgos: list[dict] = []
+
+    for m in _RE_CITA_LEY_MIN.finditer(muestra):
+        if m.group(0)[0].islower():
+            ctx = muestra[max(0, m.start() - 10):m.end() + 10]
+            hallazgos.append({
+                "modulo": "CEDIA-FMT",
+                "ubicacion": m.group(0)[:80],
+                "error": f'"{m.group(0)}" — "ley" con minúscula inicial antes de número de ley',
+                "justificacion": "Formato canónico de cita normativa: 'Ley XXXX de YYYY'",
+                "correccion": m.group(0).replace("ley", "Ley", 1),
+                "severidad": "baja",
+            })
+
+    for m in _RE_ARTICULO_SIN_TILDE.finditer(muestra):
+        ctx = muestra[max(0, m.start() - 5):m.end() + 25]
+        hallazgos.append({
+            "modulo": "CEDIA-FMT",
+            "ubicacion": ctx[:80],
+            "error": '"articulo" sin tilde diacrítica',
+            "justificacion": "Ortografía y formato canónico: 'Artículo'",
+            "correccion": "Artículo",
+            "severidad": "baja",
+        })
+
+    for m in _RE_ARTICULO_SIN_GRADO.finditer(muestra):
+        art_word, num = m.group(1), m.group(2)
+        hallazgos.append({
+            "modulo": "CEDIA-FMT",
+            "ubicacion": m.group(0)[:80],
+            "error": f'"{m.group(0)}" — número de artículo sin signo de grado (°)',
+            "justificacion": "Formato canónico: 'Artículo N°'",
+            "correccion": f"{art_word} {num}°",
+            "severidad": "baja",
+        })
+
+    for m in _RE_NUMERAL_SIN_GRADO.finditer(muestra):
+        num = m.group(1)
+        hallazgos.append({
+            "modulo": "CEDIA-FMT",
+            "ubicacion": m.group(0)[:80],
+            "error": f'"numeral {num}" — falta signo de grado (°)',
+            "justificacion": "Formato canónico: 'numeral N°'",
+            "correccion": f"numeral {num}°",
+            "severidad": "baja",
+        })
+
+    expandido = {"art": "Artículo", "num": "numeral", "lit": "literal", "par": "parágrafo"}
+    for m in _RE_ABREVIATURA_CITA.finditer(muestra):
+        abrev = m.group(1).lower()
+        hallazgos.append({
+            "modulo": "CEDIA-FMT",
+            "ubicacion": m.group(0)[:80],
+            "error": f'Abreviatura "{m.group(0)}" en texto formal',
+            "justificacion": "En providencias se escriben las formas completas, no abreviaturas",
+            "correccion": m.group(0).replace(m.group(1), expandido.get(abrev, m.group(1)), 1),
+            "severidad": "baja",
+        })
+
+    for m in _RE_LITERAL_SIN_PAREN.finditer(muestra):
+        letra = m.group(1)
+        hallazgos.append({
+            "modulo": "CEDIA-FMT",
+            "ubicacion": m.group(0)[:80],
+            "error": f'"literal {letra}" sin paréntesis de cierre',
+            "justificacion": "Formato canónico: 'literal x)'",
+            "correccion": f"literal {letra})",
+            "severidad": "baja",
+        })
+
+    for m in _RE_LEY_SIN_AÑO.finditer(muestra):
+        num_ley = m.group(1)
+        anio = _LEYES_CON_AÑO.get(num_ley)
+        if anio:
+            hallazgos.append({
+                "modulo": "CEDIA-FMT",
+                "ubicacion": m.group(0)[:80],
+                "error": f'"Ley {num_ley}" sin año de expedición',
+                "justificacion": "Formato canónico: 'Ley XXXX de YYYY'",
+                "correccion": f"Ley {num_ley} de {anio}",
+                "severidad": "baja",
+            })
+
+    return hallazgos[:5]
+
 
 async def _construir_contexto_supabase(texto: str, norma: str) -> str:
     """Extrae referencias normativas del texto y las verifica en Supabase."""
@@ -114,6 +212,26 @@ M19 PATRÓN 3 · VERBO SIN OBJETO DIRECTO:
 - "sancionado según" sin indicar el artículo concreto
 - Verbo de imputación sin complemento normativo completo
 
+CEDIA-FMT · FORMATO DE CITAS NORMATIVAS (3A):
+Estructura canónica obligatoria:
+  Artículo N°[, numeral N°][, literal x)][, inciso N°][, parágrafo N°] de la Ley XXXX de YYYY
+Errores a detectar:
+- "ley" en minúscula antes de número → debe ser "Ley"
+- "articulo" sin tilde → debe ser "Artículo"
+- Número sin signo de grado: "artículo 28" → "artículo 28°"
+- "numeral 3" sin grado → "numeral 3°"
+- Abreviaturas en texto formal: "art.", "num.", "lit.", "par." → escribir completo
+- "literal a" sin paréntesis → "literal a)"
+- "Ley 1123" sin año → "Ley 1123 de 2007" (1952→2019, 734→2002)
+Severidad: baja (error de forma sin impacto sustancial)
+
+CEDIA-FMT · AUSENCIA DE NOTA AL PIE (3B):
+- Cuando el texto cita un artículo en el cuerpo (ej. "Artículo 28° de la Ley 1123")
+  pero no existe ninguna nota al pie o referencia bibliográfica correspondiente,
+  alertar con severidad MEDIA — debilita la fundamentación documental del fallo.
+- Indicador de nota al pie: superíndice numérico [1], (1) o texto "Véase pie de página"
+  junto a la cita; ausencia de estos → hallazgo.
+
 CRITERIOS DE SEVERIDAD CNDJ:
 - Alta: artículo inexistente, norma equivocada para el sujeto disciplinado,
         o confusión art. 28/29 Ley 1123 — generan nulidad o recurso exitoso
@@ -134,7 +252,7 @@ Responde con este JSON exacto (máximo 10 hallazgos):
   "resumen": "<párrafo conciso sobre la corrección normativa del documento>",
   "hallazgos": [
     {{{{
-      "modulo": "<CEDIA-003|CEDIA-004|CEDIA-014|CEDIA-016|M18|M19>",
+      "modulo": "<CEDIA-003|CEDIA-004|CEDIA-014|CEDIA-016|CEDIA-FMT|M18|M19>",
       "ubicacion": "<cita textual breve del fragmento, máx 80 caracteres>",
       "error": "<descripción de la discrepancia normativa>",
       "justificacion": "<texto real del artículo según base normativa o criterio CEDIA>",
@@ -153,10 +271,19 @@ async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
     contexto_supabase = await _construir_contexto_supabase(texto, norma)
     plantilla = _plantilla(norma_nombre, contexto_supabase)
     prompt = plantilla.format(texto=texto[:8000])
+    fmt_hallazgos = _verificar_formato_citas_normativas(texto)
 
     try:
         raw = await llamar_openrouter(SYSTEM, prompt, max_tokens=4000)
         datos = extraer_json_respuesta(raw)
+        llm_hallazgos = datos.get("hallazgos", [])
+        vistos = {h.get("ubicacion", "")[:60].lower() for h in llm_hallazgos}
+        for fh in fmt_hallazgos:
+            key = fh.get("ubicacion", "")[:60].lower()
+            if key not in vistos:
+                llm_hallazgos.append(fh)
+                vistos.add(key)
+        datos["hallazgos"] = llm_hallazgos[:10]
         return construir_resultado("NORMATIVO", datos)
     except Exception as exc:
         return construir_resultado_error("NORMATIVO", exc)
