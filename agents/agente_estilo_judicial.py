@@ -60,10 +60,20 @@ M14 COMPONENTE DE FORMA — denominación formal:
 Detecta solo inconsistencias de registro formal (no de coherencia argumental):
 - Alternancia de "quejoso" y "denunciante" para el mismo sujeto bajo Ley 1123
   (bajo Ley 1123 el término correcto es QUEJOSO, no "denunciante")
-- Alternancia sin patrón claro entre "togado" / "disciplinado" / "investigado" /
-  "profesional" cuando podría generar ambigüedad de rol procesal
 - Uso de primera persona ("yo considero", "a mi juicio") en providencia:
   sustituir por impersonal o tercera persona
+
+M14-SIN · SINONIMIA CONTEXTUAL — unificación nominal del sujeto disciplinado (severidad MEDIA):
+Cuando en el mismo párrafo aparezcan DOS O MÁS de los siguientes términos referidos al
+mismo sujeto procesal, alertar por inconsistencia de unificación nominal:
+  disciplinado / abogado / letrado / togado / encartado / investigado / profesional
+El redactor debe elegir UNO y mantenerlo consistentemente en todo el documento.
+Ejemplo de error: "el disciplinado actuó de manera negligente cuando el togado recibió
+la notificación y el investigado no compareció" — tres denominaciones distintas para
+el mismo sujeto en el mismo párrafo.
+Corrección: elegir la denominación canónica (preferiblemente 'disciplinado' bajo Ley 1952
+o 'abogado'/'togado' bajo Ley 1123) y reemplazar las demás.
+Severidad: MEDIA — la sinonimia no genera nulidad pero debilita la contundencia del fallo.
 
 CRITERIOS DE SEVERIDAD CNDJ:
 - Alta: error que afecta la validez del acto o introduce ambigüedad interpretable
