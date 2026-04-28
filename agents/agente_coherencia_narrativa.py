@@ -7,7 +7,7 @@ Cubre: CEDIA-001 (contradicción testimonial), CEDIA-002 (construcción circular
        o ambigua de personas y roles).
 """
 
-from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
+from .base_agent import llamar_por_chunks, construir_resultado, construir_resultado_error
 from models.schemas import ResultadoAgente
 
 SYSTEM = """Eres CEDIA-COHERENCIA, analista experto en discurso jurídico disciplinario colombiano.
@@ -109,10 +109,8 @@ Responde con este JSON exacto (máximo 10 hallazgos):
 
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
-    prompt = PLANTILLA.format(texto=texto[:8000])
     try:
-        raw = await llamar_openrouter(SYSTEM, prompt)
-        datos = extraer_json_respuesta(raw)
+        datos = await llamar_por_chunks(SYSTEM, lambda chunk: PLANTILLA.format(texto=chunk), texto=texto)
         return construir_resultado("COHERENCIA NARRATIVA", datos)
     except Exception as exc:
         return construir_resultado_error("COHERENCIA NARRATIVA", exc)

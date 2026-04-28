@@ -6,7 +6,7 @@ Cubre: CEDIA-005 (gerundios incorrectos), CEDIA-012 (adverbios en -mente /
        argumental, que pertenece al Agente 3).
 """
 
-from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
+from .base_agent import llamar_por_chunks, construir_resultado, construir_resultado_error
 from models.schemas import ResultadoAgente
 
 SYSTEM = """Eres CEDIA-ESTILO, experto en registro jurídico-forense colombiano.
@@ -108,10 +108,8 @@ Responde con este JSON exacto (máximo 10 hallazgos):
 
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
-    prompt = PLANTILLA.format(texto=texto[:8000])
     try:
-        raw = await llamar_openrouter(SYSTEM, prompt)
-        datos = extraer_json_respuesta(raw)
+        datos = await llamar_por_chunks(SYSTEM, lambda chunk: PLANTILLA.format(texto=chunk), texto=texto)
         return construir_resultado("ESTILO JUDICIAL", datos)
     except Exception as exc:
         return construir_resultado_error("ESTILO JUDICIAL", exc)

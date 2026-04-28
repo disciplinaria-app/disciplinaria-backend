@@ -11,7 +11,7 @@ citados. Si Supabase no está configurado, opera en modo solo-LLM.
 """
 
 import re
-from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
+from .base_agent import llamar_por_chunks, construir_resultado, construir_resultado_error
 from .supabase_utils import verificar_articulo, buscar_articulos
 from models.schemas import ResultadoAgente
 from config import NORMAS
@@ -270,12 +270,15 @@ async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
     norma_nombre = NORMAS.get(norma, norma)
     contexto_supabase = await _construir_contexto_supabase(texto, norma)
     plantilla = _plantilla(norma_nombre, contexto_supabase)
-    prompt = plantilla.format(texto=texto[:8000])
     fmt_hallazgos = _verificar_formato_citas_normativas(texto)
 
     try:
-        raw = await llamar_openrouter(SYSTEM, prompt, max_tokens=4000)
-        datos = extraer_json_respuesta(raw)
+        datos = await llamar_por_chunks(
+            SYSTEM,
+            lambda chunk: plantilla.format(texto=chunk),
+            texto=texto,
+            max_tokens=4000,
+        )
         llm_hallazgos = datos.get("hallazgos", [])
         vistos = {h.get("ubicacion", "")[:60].lower() for h in llm_hallazgos}
         for fh in fmt_hallazgos:

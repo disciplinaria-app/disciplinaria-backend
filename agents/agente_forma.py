@@ -16,7 +16,7 @@ import asyncio
 import re
 import httpx
 
-from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
+from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error, llamar_por_chunks
 from config import LT_USERNAME, LT_API_KEY
 from models.schemas import Hallazgo, ResultadoAgente
 
@@ -304,30 +304,18 @@ Responde con este JSON exacto (máximo 12 hallazgos):
 # ── Punto de entrada ──────────────────────────────────────────────────────────
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
-    prompt = PLANTILLA.format(texto=texto[:8000])
-
-    # Llamar LLM y LanguageTool en paralelo; analizar folios determinísticamente
-    llm_task = llamar_openrouter(SYSTEM, prompt)
-    lt_task  = _consultar_languagetool(texto)
-
-    try:
-        raw, lt_hallazgos = await asyncio.gather(llm_task, lt_task)
-    except Exception as exc:
-        return construir_resultado_error("FORMA", exc)
-
-    try:
-        datos = extraer_json_respuesta(raw)
-    except Exception as exc:
-        return construir_resultado_error("FORMA", exc)
-
-    # Hallazgos deterministas de folios (sin LLM, siempre confiables)
+    # LT corre en paralelo mientras el LLM procesa los chunks secuencialmente
+    lt_task = asyncio.create_task(_consultar_languagetool(texto))
     folio_hallazgos = _analizar_folios(texto)
 
-    # Combinar: CEDIA del LLM + novedades de LanguageTool + análisis de folios
+    try:
+        datos = await llamar_por_chunks(SYSTEM, lambda chunk: PLANTILLA.format(texto=chunk), texto=texto)
+        lt_hallazgos = await lt_task
+    except Exception as exc:
+        return construir_resultado_error("FORMA", exc)
+
     cedia_hallazgos = datos.get("hallazgos", [])
     combinados = _deduplicar(cedia_hallazgos, lt_hallazgos)
-    # Los hallazgos de folio tienen ubicacion distinta (nombre del adverbio/gerundio),
-    # pero pueden solaparse; usar deduplicar nuevamente para seguridad.
     combinados = _deduplicar(combinados, folio_hallazgos)
     datos["hallazgos"] = combinados
 

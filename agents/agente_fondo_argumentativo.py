@@ -11,7 +11,7 @@ Cubre: CEDIA-013 (hipótesis como prueba) + M17 completo.
 
 import re
 
-from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
+from .base_agent import llamar_por_chunks, construir_resultado, construir_resultado_error
 from models.schemas import ResultadoAgente
 
 
@@ -191,13 +191,14 @@ Responde con este JSON exacto (máximo 12 hallazgos):
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
     consideraciones = _extraer_consideraciones(texto)
-    prompt = PLANTILLA.format(
-        texto=texto[:9000],
-        consideraciones=consideraciones[:4000],   # sección focalizada
-    )
+    consid_fija = consideraciones[:4000]
     try:
-        raw = await llamar_openrouter(SYSTEM, prompt, max_tokens=5000)
-        datos = extraer_json_respuesta(raw)
+        datos = await llamar_por_chunks(
+            SYSTEM,
+            lambda chunk: PLANTILLA.format(texto=chunk, consideraciones=consid_fija),
+            texto=texto,
+            max_tokens=5000,
+        )
         return construir_resultado("FONDO ARGUMENTATIVO", datos)
     except Exception as exc:
         return construir_resultado_error("FONDO ARGUMENTATIVO", exc)
