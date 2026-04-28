@@ -12,7 +12,7 @@ from config import ALLOWED_ORIGINS, OPENROUTER_API_KEY
 from models.schemas import AnalisisRequest, AnalisisResponse
 from agents import (
     agente_forma,
-    agente_estilo_judicial,
+    agente_estilo,
     agente_coherencia_narrativa,
     agente_argumentacion,
     agente_normativo,
@@ -106,7 +106,7 @@ async def analizar(request: AnalisisRequest) -> AnalisisResponse:
 
     resultados = await asyncio.gather(
         agente_forma.ejecutar(request.texto, request.norma),
-        agente_estilo_judicial.ejecutar(request.texto, request.norma),
+        agente_estilo.ejecutar(request.texto, request.norma),
         agente_coherencia_narrativa.ejecutar(request.texto, request.norma),
         agente_argumentacion.ejecutar(request.texto, request.norma),
         agente_normativo.ejecutar(request.texto, request.norma),
@@ -156,7 +156,7 @@ async def analizar_archivo(
 
     resultados = await asyncio.gather(
         agente_forma.ejecutar(texto, norma),
-        agente_estilo_judicial.ejecutar(texto, norma),
+        agente_estilo.ejecutar(texto, norma),
         agente_coherencia_narrativa.ejecutar(texto, norma),
         agente_argumentacion.ejecutar(texto, norma),
         agente_normativo.ejecutar(texto, norma),

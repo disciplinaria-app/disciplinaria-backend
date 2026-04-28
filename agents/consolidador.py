@@ -17,7 +17,7 @@ integrado, coherente y accionable. Responde ÚNICAMENTE con un bloque JSON váli
 
 PESOS = {
     "FORMA": 0.15,
-    "ESTILO JUDICIAL": 0.15,
+    "ESTILO": 0.15,
     "COHERENCIA NARRATIVA": 0.20,
     "ARGUMENTACIÓN": 0.25,
     "NORMATIVO": 0.25,
