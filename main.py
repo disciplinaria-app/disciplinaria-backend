@@ -14,7 +14,7 @@ from agents import (
     agente_forma,
     agente_estilo_judicial,
     agente_coherencia_narrativa,
-    agente_fondo_argumentativo,
+    agente_argumentacion,
     agente_normativo,
     consolidador,
 )
@@ -108,7 +108,7 @@ async def analizar(request: AnalisisRequest) -> AnalisisResponse:
         agente_forma.ejecutar(request.texto, request.norma),
         agente_estilo_judicial.ejecutar(request.texto, request.norma),
         agente_coherencia_narrativa.ejecutar(request.texto, request.norma),
-        agente_fondo_argumentativo.ejecutar(request.texto, request.norma),
+        agente_argumentacion.ejecutar(request.texto, request.norma),
         agente_normativo.ejecutar(request.texto, request.norma),
         return_exceptions=False,
     )
@@ -158,7 +158,7 @@ async def analizar_archivo(
         agente_forma.ejecutar(texto, norma),
         agente_estilo_judicial.ejecutar(texto, norma),
         agente_coherencia_narrativa.ejecutar(texto, norma),
-        agente_fondo_argumentativo.ejecutar(texto, norma),
+        agente_argumentacion.ejecutar(texto, norma),
         agente_normativo.ejecutar(texto, norma),
         return_exceptions=False,
     )

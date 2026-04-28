@@ -19,7 +19,7 @@ PESOS = {
     "FORMA": 0.15,
     "ESTILO JUDICIAL": 0.15,
     "COHERENCIA NARRATIVA": 0.20,
-    "FONDO ARGUMENTATIVO": 0.25,
+    "ARGUMENTACIÓN": 0.25,
     "NORMATIVO": 0.25,
 }
 
@@ -28,8 +28,11 @@ PENALIDAD = {"alta": 15, "media": 7, "baja": 2}
 
 
 def calcular_score_determinista(hallazgos: list[Hallazgo]) -> float:
-    """Puntaje global reproducible: 100 − Σ penalidades por severidad (mínimo 0)."""
+    """Puntaje global reproducible: 100 − Σ penalidades − penalidad extra por debilidad argumentativa."""
     penalizacion = sum(PENALIDAD.get(h.severidad, 0) for h in hallazgos)
+    # Penalidad adicional de 10 pts por cada hallazgo ALTA del agente de argumentación
+    alta_arg = sum(1 for h in hallazgos if h.agente == "ARGUMENTACIÓN" and h.severidad == "alta")
+    penalizacion += alta_arg * 10
     return max(0.0, round(100.0 - penalizacion, 1))
 
 
