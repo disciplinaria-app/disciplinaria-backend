@@ -186,99 +186,83 @@ def _analizar_folios(texto: str) -> list[dict]:
 # ── Prompt CEDIA ──────────────────────────────────────────────────────────────
 
 SYSTEM = """Eres CEDIA-FORMA, corrector especializado en documentos jurídicos disciplinarios colombianos.
-Tu misión es detectar exclusivamente errores de escritura objetivos y verificables según RAE 2010.
-Aplica el principio de duda razonable: si el texto puede leerse como correcto, no lo reportes.
-NO analices el contenido jurídico. Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
+Detecta exclusivamente errores objetivos de escritura verificables según RAE 2010.
+No interpretes contenido jurídico. No evalúes argumentos. Solo verifica escritura.
+Principio de duda razonable: si el texto puede leerse como correcto, no lo reportes.
+Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
 
-PLANTILLA = """Analiza el siguiente documento jurídico disciplinario colombiano.
+PLANTILLA = """Analiza el siguiente fragmento de un documento jurídico disciplinario colombiano.
+No interpretes contenido jurídico. Solo verifica errores objetivos de escritura.
 
 DOCUMENTO:
 {texto}
 
-CRITERIOS DE ANÁLISIS — detecta solo errores verificablemente incorrectos:
+M1 — ORTOGRAFÍA Y TILDES
+Detectar: verbos sin tilde que cambian significado (afirmo→afirmó, continuo→continuó,
+ordeno→ordenó, sanciono→sancionó, resolvio→resolvió, practico→practicó).
+Tildes diacríticas obligatorias: él/el, tú/tu, más/mas, sí/si, aún/aun, sé/se.
+Esdrújulas: jurídico, técnico, artículo, número, específico, ámbito, cómputo.
+Verbos pretérito: evidenció, ordenó, resolvió, concluyó, señaló, consideró, advirtió.
+Tildes incorrectas: "previo", "continuo" como adjetivos NO llevan tilde.
+Régimen preposicional: "de acuerdo con" (no "a"), "acorde con" (no "a"),
+"respecto de" (no "a"), "en razón de" (no "a razón de").
+Dequeísmo: "consideró de que" → "consideró que".
+Queísmo: "se percató que" → "se percató de que".
+No reportar: nombres propios extranjeros, términos técnicos especializados sin equivalente.
 
-CEDIA-007 · ORTOGRAFÍA Y TILDES (M1a, M1b, M1c, M1d):
-- Palabras mal escritas (letras omitidas, intercambiadas, adicionales)
-- Tildes obligatorias ausentes: verbos en pretérito (evidenció, ordenó, resolvió, concluyó,
-  señaló, manifestó, consideró, advirtió, profirió, absolvió); esdrújulas (jurídico, técnico,
-  artículo, número, específico); tildes diacríticas (él/el, tú/tu, más/mas, sí/si, aún/aun)
-- Tildes incorrectas en adjetivos: "previo", "continuo" NO llevan tilde
-- Homófonos en contexto jurídico: callo/cayó, haber/a ver, interpuso/impuso
-- Régimen preposicional: "de acuerdo con" (no "a"), "en razón de" (no "a"),
-  "respecto de" (no "a"), "acorde con" (no "a")
-- Dequeísmo: "consideró de que" → "consideró que"; queísmo: "se percató que" → "se percató de que"
-- Inserción espuria de preposición: "proceso de disciplinario" → "proceso disciplinario"
+M2 — CONCORDANCIA NOMINAL (incluye verificación género-nombre propio)
+Regla: artículo, sustantivo y adjetivo deben concordar en género y número.
+"las pruebas aportados" → "aportadas"; "los elemento probatorio" → "los elementos".
+ALTA SEVERIDAD — género opuesto al nombre propio que sigue en el párrafo:
+"la abogada CHRISTIAN GERARDO MARTÍNEZ" → "el abogado CHRISTIAN GERARDO MARTÍNEZ"
+"el disciplinado MARÍA CAMILA TORRES" → "la disciplinada MARÍA CAMILA TORRES"
+Indicios masculinos: CHRISTIAN, CARLOS, JORGE, LUIS, ANDRÉS, GABRIEL, GERARDO, JUAN.
+Indicios femeninos: MARÍA, ANA, LAURA, CAROLINA, ANDREA, CAMILA, DIANA, PATRICIA.
+Excepciones que NO son error: sujeto colectivo singular ("la Sala considera"), pasiva refleja.
 
-CEDIA-008 · CONCORDANCIA (M2a-M2e):
-- Concordancia nominal de género: "las pruebas aportados" → "aportadas"
-- Concordancia nominal de número: "las decisión" → "la decisión"
-- Concordancia verbal: sujeto plural con verbo singular ("los elementos probatorios demuestra")
-- EXCEPCIONES que NO son error: sujeto colectivo singular ("la Sala considera"), pasiva refleja
+M3 — CONCORDANCIA VERBAL
+Regla: verbo concuerda en número y persona con el sujeto gramatical.
+"los elementos probatorios demuestra" → "demuestran"
+"la defensa y la fiscalía presentó" → "presentaron"
+No reportar: sujetos pospuestos ambiguos, sujetos colectivos con verbo singular aceptado.
 
-CEDIA-008-G · CONCORDANCIA GÉNERO-NOMBRE PROPIO (severidad ALTA):
-Detectar cuando el artículo + sustantivo de rol tiene género opuesto al del nombre propio
-que le sigue en el mismo párrafo.
-  - Términos FEMENINOS de rol: 'la abogada', 'la disciplinada', 'la investigada',
-    'la quejosa', 'la defensora', 'la togada'
-  - Términos MASCULINOS de rol: 'el abogado', 'el disciplinado', 'el investigado',
-    'el quejoso', 'el defensor', 'el togado'
-  - Indicios de nombre masculino: CHRISTIAN, CARLOS, JORGE, LUIS, ANDRÉS, GABRIEL,
-    RAFAEL, GERARDO, RODRIGO, MANUEL, JUAN, PEDRO y similares
-  - Indicios de nombre femenino: MARÍA, ANA, LAURA, CAROLINA, ANDREA, CAMILA, DIANA,
-    PATRICIA, CLAUDIA, JESSICA y similares
-  - Ejemplo de error: 'la abogada CHRISTIAN GERARDO MARTÍNEZ' → 'el abogado CHRISTIAN GERARDO MARTÍNEZ'
-  - Ejemplo de error: 'el disciplinado MARÍA CAMILA TORRES' → 'la disciplinada MARÍA CAMILA TORRES'
-  - Severidad ALTA: la discordancia afecta la identificación del sujeto disciplinado
+M4 — CONSISTENCIA TEMPORAL
+Regla: hechos narrados en pretérito, consideraciones jurídicas en presente,
+decisum en presente o futuro. Cambio injustificado en el mismo párrafo = error.
+SOLO alertar cuando el tiempo cambia sin justificación narrativa ni jurídica.
+No reportar: citas textuales ni transcripciones de declaraciones.
+No reportar: "incumplió los deberes [pretérito] — la falta es gravísima [presente]"
+— la alternancia narración/calificación es correcta.
 
-CEDIA-010 · PUNTUACIÓN RAE 2010 — solo reglas inequívocas:
-- Coma entre sujeto y predicado: NUNCA ("el abogado[,] incurrió")
-- Coma antes de "que" sustantivo: NUNCA ("concluyó[,] que no podía")
-- Vocativo siempre entre comas: "Señor defensor[,] tiene el uso"
-- Inciso explicativo siempre entre comas
-- Coma antes de conjunción en enumeración simple: NUNCA
+M5 — REPETICIÓN MORFOLÓGICA POR RAÍZ
+Detectar: misma raíz morfológica en el mismo párrafo indica pobreza léxica.
+contactar/contactarlo (raíz CONTACT), respondió/respondiendo (raíz RESPOND),
+comunicar/comunicación en mismo párrafo.
+Excepción: términos técnicos sin sinónimo real (disciplinado, quejoso, falta, norma).
+CRÍTICO: la corrección NO puede usar la misma raíz léxica que la palabra errónea.
+"comunicar/comunicación" → NO "hacer comunicación" → SÍ "transmitir / informar".
 
-CEDIA-011 · ESPACIADO:
-- Dobles espacios entre palabras
-- Espacio antes de signo de puntuación
-- Falta espacio tras punto final de oración
-- Espaciado incorrecto en fechas y referencias: "31de" → "31 de", "artículo28" → "artículo 28"
+CEDIA-018 — REDUNDANCIAS FIJAS
+"el día lunes" → "el lunes", "el mes de agosto" → "agosto",
+"resultado final" → "resultado", "regresar de nuevo" → "regresar",
+"subir arriba" → "subir", "en horas de la mañana" → la hora específica si consta.
+"En agosto de 2023" es CORRECTO — no reportar.
+CRÍTICO: la corrección NO puede introducir otro adverbio en -mente.
 
-CEDIA-017 · SIGNOS SIN CERRAR (severidad ALTA):
-- Paréntesis abierto sin cerrar
-- Comillas abiertas sin cerrar (especialmente en citas largas de audiencias)
-- Guión de inciso abierto sin cerrar
-- Corchete abierto sin cerrar
+CEDIA-017 — INSERCIÓN ESPURIA DE PREPOSICIÓN
+Preposición insertada incorrectamente antes de complemento directo.
+"le informó de que vendría" → "informó que vendría"
+"pidió de que firmara" → "pidió que firmara"
+"explicó de que la norma" → "explicó que la norma"
 
-CEDIA-018 · REDUNDANCIAS Y REPETICIÓN MORFOLÓGICA (M5a, M5g):
-- Repetición morfológica por raíz léxica en mismo párrafo:
-  contactar/contactarlo (raíz CONTACT), respondió/respondiendo (raíz RESPOND)
-- Redundancias fijas: "el día lunes" → "el lunes", "resultado final" → "resultado",
-  "regresar de nuevo" → "regresar", "en horas de la mañana" → hora específica
+CRITERIOS DE SEVERIDAD:
+- Alta: afecta validez jurídica o identifica incorrectamente al sujeto disciplinado
+- Media: genera ambigüedad interpretable por la defensa
+- Baja: error de forma sin impacto sustancial
 
-M19 PATRONES 1 Y 2 · OMISIÓN DE SUSTANTIVOS O NÚMEROS:
-- Patrón 1: número sin sustantivo referencial ("en el 37 de la Ley" → "en el artículo 37")
-- Patrón 2: sustantivo sin número ("el artículo de la Ley 1123" sin especificar cuál)
-
-CRITERIOS DE SEVERIDAD CNDJ:
-- Alta: afecta validez jurídica del acto o genera nulidad/recurso exitoso
-- Media: debilita argumentación o genera ambigüedad interpretable por la defensa
-- Baja: error de forma corregible sin impacto en el fondo
-
-REGLAS OBLIGATORIAS PARA EL CAMPO "correccion":
-  1. RAÍZ MORFOLÓGICA: la corrección NO puede contener la misma raíz léxica
-     que la palabra errónea que reemplaza. Si la única corrección posible
-     comparte raíz, propón una construcción alternativa sin esa raíz.
-     Ejemplo: "contactar/contactarlo" → no corregir como "hacer contacto" (raíz
-     CONTACT presente) → corregir como "comunicarse con él".
-  2. ADVERBIOS EN -mente: si el párrafo del fragmento ya contiene un adverbio
-     en -mente, la corrección NO puede introducir otro adverbio en -mente.
-     Usa en su lugar una construcción adverbial (con + sustantivo abstracto).
-     Ejemplo: párrafo tiene "jurídicamente" → corrección propuesta "claramente"
-     → cambiar a "con claridad".
-  3. REDUNDANCIA TEMPORAL: "el día lunes" → corregir SOLO como "el lunes"
-     (no como "el día 17" ni ninguna variante que agregue información nueva).
-     "en horas de la mañana" → reemplazar por la hora específica si está
-     disponible en el texto; si no → "en la mañana".
+REGLA OBLIGATORIA CAMPO "correccion":
+Si el párrafo ya contiene un adverbio en -mente, la corrección NO puede introducir otro.
+Usar "con + sustantivo abstracto": "claramente" → "con claridad".
 
 Responde con este JSON exacto (máximo 12 hallazgos):
 ```json
@@ -287,10 +271,10 @@ Responde con este JSON exacto (máximo 12 hallazgos):
   "resumen": "<párrafo conciso sobre el estado formal del documento>",
   "hallazgos": [
     {{
-      "modulo": "<CEDIA-007|CEDIA-008|CEDIA-010|CEDIA-011|CEDIA-017|CEDIA-018|M19>",
-      "ubicacion": "<cita textual breve del fragmento, máx 80 caracteres>",
-      "error": "<descripción precisa del error>",
-      "justificacion": "<regla RAE o criterio CEDIA que se incumple>",
+      "modulo": "<M1|M2|M3|M4|M5|CEDIA-017|CEDIA-018>",
+      "ubicacion": "<fragmento exacto del texto con el error, máx 80 caracteres>",
+      "error": "<descripción concisa del error>",
+      "justificacion": "<regla RAE o criterio CEDIA que lo sustenta>",
       "correccion": "<texto corregido listo para usar>",
       "severidad": "<alta|media|baja>"
     }}
