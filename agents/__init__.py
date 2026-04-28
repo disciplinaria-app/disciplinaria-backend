@@ -1,7 +1,7 @@
 from . import (
     agente_forma,
     agente_estilo,
-    agente_coherencia_narrativa,
+    agente_coherencia,
     agente_argumentacion,
     agente_normativo,
     consolidador,
@@ -10,7 +10,7 @@ from . import (
 __all__ = [
     "agente_forma",
     "agente_estilo",
-    "agente_coherencia_narrativa",
+    "agente_coherencia",
     "agente_argumentacion",
     "agente_normativo",
     "consolidador",

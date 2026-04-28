@@ -13,7 +13,7 @@ from models.schemas import AnalisisRequest, AnalisisResponse
 from agents import (
     agente_forma,
     agente_estilo,
-    agente_coherencia_narrativa,
+    agente_coherencia,
     agente_argumentacion,
     agente_normativo,
     consolidador,
@@ -107,7 +107,7 @@ async def analizar(request: AnalisisRequest) -> AnalisisResponse:
     resultados = await asyncio.gather(
         agente_forma.ejecutar(request.texto, request.norma),
         agente_estilo.ejecutar(request.texto, request.norma),
-        agente_coherencia_narrativa.ejecutar(request.texto, request.norma),
+        agente_coherencia.ejecutar(request.texto, request.norma),
         agente_argumentacion.ejecutar(request.texto, request.norma),
         agente_normativo.ejecutar(request.texto, request.norma),
         return_exceptions=False,
@@ -157,7 +157,7 @@ async def analizar_archivo(
     resultados = await asyncio.gather(
         agente_forma.ejecutar(texto, norma),
         agente_estilo.ejecutar(texto, norma),
-        agente_coherencia_narrativa.ejecutar(texto, norma),
+        agente_coherencia.ejecutar(texto, norma),
         agente_argumentacion.ejecutar(texto, norma),
         agente_normativo.ejecutar(texto, norma),
         return_exceptions=False,
