@@ -436,6 +436,9 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
     # Mapa LT offset → párrafo (construido una sola vez)
     offset_map = _build_para_offset_map(doc)
 
+    # Texto plano del documento para verificar existencia literal de ubicaciones
+    _texto_doc = "\n".join(p.text for p in doc.paragraphs if p.text.strip()).lower()
+
     for h in hallazgos:
         ubicacion = (h.ubicacion or "").strip()
         correccion = (h.correccion or "").strip()
@@ -446,6 +449,12 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
         lt_offset = getattr(h, "lt_offset", None)
 
         if not error and not ubicacion:
+            continue
+
+        # Descartar hallazgos cuya ubicacion no existe literalmente en el documento.
+        # Previene que alucinaciones del LLM produzcan comentarios en el párrafo
+        # equivocado o track changes con texto que nunca estuvo en el documento.
+        if ubicacion and ubicacion.lower() not in _texto_doc:
             continue
 
         autor = f"DISCIPLINAR[IA] — {agente} [{modulo}]"
