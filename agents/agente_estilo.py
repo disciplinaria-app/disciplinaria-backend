@@ -20,6 +20,14 @@ _RE_MENTE  = re.compile(r"\b\w+mente\b", re.IGNORECASE)
 _RE_GERUND = re.compile(r"\b\w+[aáe]ndo\b", re.IGNORECASE)
 _PALABRAS_POR_FOLIO = 300
 
+# Nombres propios colombianos que terminan en -ando/-endo y no son gerundios.
+# Sin este filtro el regex los clasifica como gerundios (falsos positivos).
+_NOMBRES_NO_GERUNDIO = frozenset({
+    "armando", "fernando", "orlando", "hernando", "rolando",
+    "alejandro", "bernardo", "leonardo", "gerardo", "eduardo",
+    "ricardo", "gustavo", "roberto", "alberto", "ernando",
+})
+
 
 def _analizar_folios(texto: str) -> list[dict]:
     """Cuenta gerundios (M6) y adverbios -mente (CEDIA-011) por folio virtual."""
@@ -45,7 +53,10 @@ def _analizar_folios(texto: str) -> list[dict]:
                 "severidad": "media",
             })
 
-        gerundios = _RE_GERUND.findall(chunk)
+        gerundios = [
+            g for g in _RE_GERUND.findall(chunk)
+            if g.lower() not in _NOMBRES_NO_GERUNDIO
+        ]
         if len(gerundios) > 1:
             primeros_g = ", ".join(gerundios[:3])
             hallazgos.append({
