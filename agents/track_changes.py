@@ -413,6 +413,117 @@ def _inject_comments(docx_bytes: bytes, comment_xmls: list[str]) -> bytes:
     return out_buf.getvalue()
 
 
+# ── Corrección directa (sin track changes) ───────────────────────────────────
+
+def _reemplazar_texto_en_parrafo(para_el, ubicacion: str, correccion: str) -> bool:
+    """
+    Sustituye ubicacion por correccion directamente en los <w:t> del párrafo.
+    No inserta <w:del>/<w:ins> — el resultado es texto limpio sin marcas de revisión.
+    Retorna True si el reemplazo tuvo éxito.
+    """
+    rmap = _run_map(para_el)
+    if not rmap:
+        return False
+
+    combined = "".join(t for _, _, _, t in rmap)
+    pos = combined.lower().find(ubicacion.lower().strip())
+    if pos == -1:
+        return False
+
+    end_pos = pos + len(ubicacion)
+    affected = [(s, e, r, t) for s, e, r, t in rmap if s < end_pos and e > pos]
+    if not affected:
+        return False
+
+    # Texto que precede y sigue al match dentro de los runs afectados
+    prefix = combined[affected[0][0] : pos]
+    suffix = combined[end_pos : affected[-1][1]]
+
+    # Consolidar todo en el primer run afectado
+    first_r = affected[0][2]
+    t_el = first_r.find(f"{{{W}}}t")
+    if t_el is None:
+        t_el = OxmlElement("w:t")
+        first_r.append(t_el)
+
+    t_el.text = prefix + correccion + suffix
+    if t_el.text and (t_el.text[0] == " " or t_el.text[-1] == " "):
+        t_el.set(XML_SPACE, "preserve")
+
+    # Eliminar los runs sobrantes (los que fueron absorbidos en el primero)
+    for _, _, r_el, _ in affected[1:]:
+        parent = r_el.getparent()
+        if parent is not None:
+            parent.remove(r_el)
+
+    return True
+
+
+def aplicar_correcciones_zip(docx_bytes: bytes, hallazgos: list) -> bytes:
+    """
+    Aplica las correcciones aceptadas directamente al texto del .docx.
+
+    Diferencias clave respecto a generar_documento_revisado():
+      - Sin track changes: el texto queda limpio, listo para usar.
+      - Corrección ZIP quirúrgica: solo se reescribe word/document.xml
+        dentro del ZIP. Imágenes, estilos, headers, footers, rels y temas
+        salen intactos del archivo original — sin pasar por doc.save().
+
+    Restricciones idénticas a BUG 4: descarta hallazgos cuya ubicacion
+    no existe literalmente en el documento. Descarta correcciones > 15 palabras
+    (son reescrituras, no sustituciones puntuales).
+    """
+    from lxml import etree as letree
+
+    doc = Document(io.BytesIO(docx_bytes))
+    offset_map = _build_para_offset_map(doc)
+    texto_doc = "\n".join(p.text for p in doc.paragraphs if p.text.strip()).lower()
+
+    for h in hallazgos:
+        ubicacion  = (h.ubicacion  or "").strip()
+        correccion = (h.correccion or "").strip()
+
+        if not ubicacion or not correccion:
+            continue
+        if ubicacion.lower() == correccion.lower():
+            continue
+        if ubicacion.lower() not in texto_doc:
+            continue
+        if len(correccion.split()) > 15:
+            continue
+
+        lt_offset = getattr(h, "lt_offset", None)
+        if lt_offset is not None:
+            para_idx = _find_paragraph_by_offset(offset_map, lt_offset)
+        else:
+            para_idx = _find_paragraph(doc, ubicacion) if ubicacion else None
+
+        if para_idx is None:
+            continue
+
+        _reemplazar_texto_en_parrafo(doc.paragraphs[para_idx]._p, ubicacion, correccion)
+
+    # Serializar el árbol lxml modificado (los _p son referencias directas al árbol)
+    new_doc_xml = letree.tostring(
+        doc.element,
+        xml_declaration=True,
+        encoding="UTF-8",
+        standalone=True,
+    )
+
+    # Reensamblar ZIP: solo word/document.xml cambia, todo lo demás del original
+    out_buf = io.BytesIO()
+    with zipfile.ZipFile(io.BytesIO(docx_bytes), "r") as src:
+        with zipfile.ZipFile(out_buf, "w", zipfile.ZIP_DEFLATED) as out:
+            for item in src.infolist():
+                if item.filename == "word/document.xml":
+                    out.writestr(item, new_doc_xml)
+                else:
+                    out.writestr(item, src.read(item.filename))
+
+    return out_buf.getvalue()
+
+
 # ── Función principal ─────────────────────────────────────────────────────────
 
 def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:

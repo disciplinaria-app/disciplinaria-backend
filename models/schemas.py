@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Literal
+from typing import Literal, Annotated
 
 
 class AnalisisRequest(BaseModel):
@@ -81,3 +81,21 @@ class AnalisisResponse(BaseModel):
     estadisticas: Estadisticas
     detalle_agentes: list[ResultadoAgente]
     archivo_id: str | None = Field(None, description="ID del .docx procesado disponible en /descargar/{id}")
+
+
+class AplicarRequest(BaseModel):
+    """Cuerpo del POST /aplicar/{archivo_id}.
+    El frontend envía los IDs de los hallazgos que el revisor aprobó.
+    El backend aplica solo esos al .docx original y devuelve el archivo corregido.
+    """
+    hallazgo_ids: list[int] = Field(
+        ...,
+        min_length=1,
+        description="IDs de los hallazgos aceptados por el revisor",
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {"hallazgo_ids": [1, 4, 7, 12]}
+        }
+    }

@@ -3,13 +3,14 @@ import io
 import time
 import uuid
 from contextlib import asynccontextmanager
+from dataclasses import dataclass
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
 
 from config import ALLOWED_ORIGINS, OPENROUTER_API_KEY
-from models.schemas import AnalisisRequest, AnalisisResponse
+from models.schemas import AnalisisRequest, AnalisisResponse, AplicarRequest
 from agents import (
     agente_forma,
     agente_estilo,
@@ -21,14 +22,23 @@ from agents import (
 
 
 # ── Almacenamiento temporal de documentos procesados ─────────────────────────
-# { archivo_id: (docx_bytes, timestamp, nombre_original) }
-_archivos_temp: dict[str, tuple[bytes, float, str]] = {}
+
+@dataclass
+class _EntryTemp:
+    """Entrada en caché para un documento analizado."""
+    original_bytes: bytes          # .docx tal como lo subió el usuario
+    hallazgos: list                # lista completa de Hallazgo del consolidador
+    timestamp: float               # time.monotonic() al momento del análisis
+    nombre_stem: str               # nombre base sin extensión para la descarga
+
+_archivos_temp: dict[str, _EntryTemp] = {}
 _EXPIRA_SEG = 3600  # 1 hora
 
 
 def _limpiar_expirados() -> None:
     ahora = time.monotonic()
-    for k in [k for k, (_, ts, _) in _archivos_temp.items() if ahora - ts > _EXPIRA_SEG]:
+    expirados = [k for k, v in _archivos_temp.items() if ahora - v.timestamp > _EXPIRA_SEG]
+    for k in expirados:
         del _archivos_temp[k]
 
 
@@ -165,19 +175,17 @@ async def analizar_archivo(
 
     respuesta = await consolidador.consolidar(list(resultados), norma)
 
-    # Generar .docx con control de cambios
-    from agents.track_changes import generar_documento_revisado
-    try:
-        docx_revisado = generar_documento_revisado(docx_bytes, respuesta.hallazgos)
-    except Exception:
-        docx_revisado = docx_bytes  # fallback: retornar original sin modificar
-
-    # Almacenar temporalmente
+    # Almacenar original + hallazgos para descarga selectiva posterior
     from pathlib import Path as _Path
     archivo_id = str(uuid.uuid4())
     nombre_stem = _Path(nombre).stem
     _limpiar_expirados()
-    _archivos_temp[archivo_id] = (docx_revisado, time.monotonic(), nombre_stem)
+    _archivos_temp[archivo_id] = _EntryTemp(
+        original_bytes=docx_bytes,
+        hallazgos=respuesta.hallazgos,
+        timestamp=time.monotonic(),
+        nombre_stem=nombre_stem,
+    )
 
     duracion = round(time.monotonic() - inicio, 2)
     respuesta.estadisticas.distribucion_puntajes["_duracion_segundos"] = duracion
@@ -186,17 +194,61 @@ async def analizar_archivo(
     return respuesta
 
 
-@app.get("/descargar/{archivo_id}", summary="Descargar .docx revisado con control de cambios")
+@app.get("/descargar/{archivo_id}", summary="Descargar .docx completo con track changes (todos los hallazgos)")
 async def descargar_archivo(archivo_id: str) -> Response:
+    """Genera el .docx con track changes para TODOS los hallazgos detectados.
+    Para aplicar solo los hallazgos aprobados por el revisor, usar POST /aplicar/{archivo_id}.
+    """
     _limpiar_expirados()
     if archivo_id not in _archivos_temp:
         raise HTTPException(status_code=404, detail="Archivo no encontrado o expirado (1 hora).")
 
-    docx_bytes, _, nombre_stem = _archivos_temp[archivo_id]
-    nombre_descarga = f"{nombre_stem}_DISCIPLINARIA_revisado.docx"
+    entry = _archivos_temp[archivo_id]
 
+    from agents.track_changes import generar_documento_revisado
+    try:
+        docx_revisado = generar_documento_revisado(entry.original_bytes, entry.hallazgos)
+    except Exception:
+        docx_revisado = entry.original_bytes
+
+    nombre_descarga = f"{entry.nombre_stem}_DISCIPLINARIA_revisado.docx"
     return Response(
-        content=docx_bytes,
+        content=docx_revisado,
+        media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        headers={"Content-Disposition": f'attachment; filename="{nombre_descarga}"'},
+    )
+
+
+@app.post(
+    "/aplicar/{archivo_id}",
+    summary="Aplicar hallazgos aprobados y descargar .docx corregido",
+    description=(
+        "Recibe la lista de IDs de hallazgos que el revisor aprobó en la interfaz web. "
+        "Aplica solo esas correcciones al .docx original sin track changes — "
+        "el archivo descargado tiene el texto ya corregido, listo para usar."
+    ),
+)
+async def aplicar_correcciones(archivo_id: str, body: AplicarRequest) -> Response:
+    _limpiar_expirados()
+    if archivo_id not in _archivos_temp:
+        raise HTTPException(status_code=404, detail="Archivo no encontrado o expirado (1 hora).")
+
+    entry = _archivos_temp[archivo_id]
+    ids_set = set(body.hallazgo_ids)
+    hallazgos_aceptados = [h for h in entry.hallazgos if h.id in ids_set]
+
+    if not hallazgos_aceptados:
+        raise HTTPException(status_code=400, detail="Ningún hallazgo válido en la selección.")
+
+    from agents.track_changes import aplicar_correcciones_zip
+    try:
+        docx_resultado = aplicar_correcciones_zip(entry.original_bytes, hallazgos_aceptados)
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=f"Error al aplicar correcciones: {exc}")
+
+    nombre_descarga = f"{entry.nombre_stem}_DISCIPLINARIA_corregido.docx"
+    return Response(
+        content=docx_resultado,
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{nombre_descarga}"'},
     )
