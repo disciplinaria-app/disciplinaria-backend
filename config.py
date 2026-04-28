@@ -19,6 +19,7 @@ SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "")
 # ── LanguageTool Premium (Agente 1) ─────────────────────────────────────────
 LT_USERNAME = os.getenv("LT_USERNAME", "")
 LT_API_KEY  = os.getenv("LT_API_KEY", "")
+print(f"[LT] Credenciales: {bool(LT_USERNAME)} / {bool(LT_API_KEY)}")
 
 # ── CORS ─────────────────────────────────────────────────────────────────────
 ALLOWED_ORIGINS = [

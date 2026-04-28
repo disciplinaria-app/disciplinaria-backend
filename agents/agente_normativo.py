@@ -23,6 +23,12 @@ SA5.2 — Nota al pie: toda cita de artículo debe tener referencia de pie de p�
 SA5.3 — Verificación vectorial: contrasta el contenido invocado con el texto real.
 REGLA ABSOLUTA: jamás inventes el contenido de un artículo. Si no puedes verificarlo,
 reporta "artículo no verificado" como hallazgo de severidad media.
+REGLA CRÍTICA — campo "ubicacion":
+El campo "ubicacion" debe ser texto copiado literalmente del documento, entre 5 y 25 palabras.
+PROHIBIDO: "Diego Armando Henao Montes presentó queja señalando / el den..."
+CORRECTO: "de conformidad con la ley 941 de 2005 artículo primero"
+Si el error es una omisión normativa global → ubicacion = texto literal donde debería
+aparecer la cita, o el párrafo más cercano al punto de omisión, copiado literalmente.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
 
 _PATRON_ARTICULO = re.compile(

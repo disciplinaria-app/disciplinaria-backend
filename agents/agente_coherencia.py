@@ -17,6 +17,12 @@ SYSTEM = """Eres CEDIA-COHERENCIA, analista experto en discurso jurídico discip
 Detectas contradicciones, ambigüedades referenciales, rupturas narrativas y lagunas
 cronológicas. Principio absoluto: el redactor DEPURA — no transcribe. Solo reportas
 errores del REDACTOR, nunca del testigo que declaró algo incoherente.
+REGLA CRÍTICA — campo "ubicacion":
+El campo "ubicacion" debe ser texto copiado literalmente del documento, entre 5 y 25 palabras.
+PROHIBIDO: descripciones, títulos de sección, meta-referencias abstractas.
+INCORRECTO: '"primera fecha" → "tercera sesión" sin referencia a segunda'
+CORRECTO: "en la primera fecha de audiencia el procesado no compareció"
+Si no puedes citar texto literal → omite el hallazgo completamente.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
 
 PLANTILLA = """Analiza el siguiente fragmento de un documento jurídico disciplinario colombiano.

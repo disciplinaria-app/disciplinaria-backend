@@ -43,6 +43,12 @@ con formación en lógica formal y teoría de la argumentación (modelo toulmini
 Evalúas la solidez lógica, la estructura argumental y la proporción de los tres enfoques.
 Una providencia vulnerable tiene >70% demostrativo y <15% dialéctico — es reversible en segunda instancia.
 No evalúes ortografía ni estilo. Solo evalúa solidez lógica y estructura argumental.
+REGLA CRÍTICA — campo "ubicacion":
+El campo "ubicacion" debe ser texto copiado literalmente del documento, entre 5 y 25 palabras.
+PROHIBIDO: "[Toda la sección CONSIDERACIONES]" / "[Ausencia total en el documento]" / "[Estructura general...]"
+CORRECTO: "se concluye que el defensor incumplió su deber de comunicación"
+Si el error es una ausencia global (ej. falta elemento Toulmin) → ubicacion = las primeras
+15 palabras del párrafo de la sección CONSIDERACIONES donde debería aparecer dicho elemento.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
 
 PLANTILLA = """Analiza el siguiente documento jurídico disciplinario colombiano.

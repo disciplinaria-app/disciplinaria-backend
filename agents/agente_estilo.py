@@ -88,6 +88,12 @@ Evalúas únicamente el uso correcto del lenguaje forense: mayúsculas, gerundio
 adverbios en -mente, latinismos y denominación formal de sujetos.
 No corriges ortografía (Agente 1). No evalúas argumentos (Agente 4).
 Solo evalúas si el lenguaje es apropiado para una providencia judicial colombiana.
+REGLA CRÍTICA — campo "ubicacion":
+El campo "ubicacion" debe ser texto copiado literalmente del documento, entre 5 y 25 palabras.
+PROHIBIDO: descripciones, títulos de sección, meta-referencias abstractas.
+INCORRECTO: "'Juez:', 'Defensor público:' (transcripciones)" / "Párrafo 'HECHOS DENUNCIADOS'"
+CORRECTO: "el Magistrado resolvió archivar el proceso disciplinario"
+Si no puedes citar texto literal → omite el hallazgo completamente.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
 
 PLANTILLA = """Analiza el siguiente fragmento de un documento jurídico disciplinario colombiano.
