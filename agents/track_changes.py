@@ -466,9 +466,12 @@ def generar_documento_revisado(docx_bytes: bytes, hallazgos: list) -> bytes:
         inserted_track = False
 
         # ── Agentes 1-3: intentar track change ──────────────────────────────
+        # Correcciones de más de 15 palabras son reescrituras de párrafo completo —
+        # insertarlas como w:del/w:ins produce texto fabricado. Van a comentario.
         if (agente in AGENTES_TRACK
                 and ubicacion and correccion
-                and ubicacion.lower() != correccion.lower()):
+                and ubicacion.lower() != correccion.lower()
+                and len(correccion.split()) <= 15):
             try:
                 inserted_track = insertar_track_change(
                     doc, para_idx, ubicacion, correccion, autor, rev_id
