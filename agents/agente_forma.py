@@ -160,6 +160,11 @@ ALTA SEVERIDAD — género opuesto al nombre propio que sigue en el párrafo:
 Indicios masculinos: CHRISTIAN, CARLOS, JORGE, LUIS, ANDRÉS, GABRIEL, GERARDO, JUAN.
 Indicios femeninos: MARÍA, ANA, LAURA, CAROLINA, ANDREA, CAMILA, DIANA, PATRICIA.
 Excepciones que NO son error: sujeto colectivo singular ("la Sala considera"), pasiva refleja.
+CRÍTICO: Este criterio aplica a TODOS los párrafos del documento sin excepción,
+incluyendo encabezado, antecedentes, consideraciones y especialmente la parte
+resolutiva (RESUELVE / PRIMERO / SEGUNDO / TERCERO). Un error de concordancia
+género↔nombre propio en la parte resolutiva es siempre ALTA SEVERIDAD porque
+identifica incorrectamente al sujeto disciplinado en el acto jurídico definitivo.
 
 M3 — CONCORDANCIA VERBAL
 Regla: verbo concuerda en número y persona con el sujeto gramatical.
