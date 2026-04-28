@@ -24,6 +24,15 @@ PESOS = {
 }
 
 
+PENALIDAD = {"alta": 15, "media": 7, "baja": 2}
+
+
+def calcular_score_determinista(hallazgos: list[Hallazgo]) -> float:
+    """Puntaje global reproducible: 100 − Σ penalidades por severidad (mínimo 0)."""
+    penalizacion = sum(PENALIDAD.get(h.severidad, 0) for h in hallazgos)
+    return max(0.0, round(100.0 - penalizacion, 1))
+
+
 def _calcular_nivel(puntaje: float) -> str:
     if puntaje >= 85:
         return "EXCELENTE"
@@ -149,9 +158,9 @@ Responde con este JSON exacto:
 
 
 async def consolidar(resultados: list[ResultadoAgente], norma: str) -> AnalisisResponse:
-    puntaje = _puntaje_ponderado(resultados)
-    nivel = _calcular_nivel(puntaje)
     hallazgos = _agregar_hallazgos(resultados)
+    puntaje = calcular_score_determinista(hallazgos)
+    nivel = _calcular_nivel(puntaje)
     estadisticas = _construir_estadisticas(resultados, norma, hallazgos)
 
     resumen, errores, fortalezas, recomendaciones = await _generar_resumen_ejecutivo(

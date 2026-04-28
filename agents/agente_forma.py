@@ -16,7 +16,7 @@ import asyncio
 import re
 import httpx
 
-from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
+from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error, llamar_por_chunks
 from config import LT_USERNAME, LT_API_KEY
 from models.schemas import Hallazgo, ResultadoAgente
 
@@ -215,6 +215,21 @@ CEDIA-008 · CONCORDANCIA (M2a-M2e):
 - Concordancia verbal: sujeto plural con verbo singular ("los elementos probatorios demuestra")
 - EXCEPCIONES que NO son error: sujeto colectivo singular ("la Sala considera"), pasiva refleja
 
+CEDIA-008-G · CONCORDANCIA GÉNERO-NOMBRE PROPIO (severidad ALTA):
+Detectar cuando el artículo + sustantivo de rol tiene género opuesto al del nombre propio
+que le sigue en el mismo párrafo.
+  - Términos FEMENINOS de rol: 'la abogada', 'la disciplinada', 'la investigada',
+    'la quejosa', 'la defensora', 'la togada'
+  - Términos MASCULINOS de rol: 'el abogado', 'el disciplinado', 'el investigado',
+    'el quejoso', 'el defensor', 'el togado'
+  - Indicios de nombre masculino: CHRISTIAN, CARLOS, JORGE, LUIS, ANDRÉS, GABRIEL,
+    RAFAEL, GERARDO, RODRIGO, MANUEL, JUAN, PEDRO y similares
+  - Indicios de nombre femenino: MARÍA, ANA, LAURA, CAROLINA, ANDREA, CAMILA, DIANA,
+    PATRICIA, CLAUDIA, JESSICA y similares
+  - Ejemplo de error: 'la abogada CHRISTIAN GERARDO MARTÍNEZ' → 'el abogado CHRISTIAN GERARDO MARTÍNEZ'
+  - Ejemplo de error: 'el disciplinado MARÍA CAMILA TORRES' → 'la disciplinada MARÍA CAMILA TORRES'
+  - Severidad ALTA: la discordancia afecta la identificación del sujeto disciplinado
+
 CEDIA-010 · PUNTUACIÓN RAE 2010 — solo reglas inequívocas:
 - Coma entre sujeto y predicado: NUNCA ("el abogado[,] incurrió")
 - Coma antes de "que" sustantivo: NUNCA ("concluyó[,] que no podía")
@@ -289,30 +304,18 @@ Responde con este JSON exacto (máximo 12 hallazgos):
 # ── Punto de entrada ──────────────────────────────────────────────────────────
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
-    prompt = PLANTILLA.format(texto=texto[:8000])
-
-    # Llamar LLM y LanguageTool en paralelo; analizar folios determinísticamente
-    llm_task = llamar_openrouter(SYSTEM, prompt)
-    lt_task  = _consultar_languagetool(texto)
-
-    try:
-        raw, lt_hallazgos = await asyncio.gather(llm_task, lt_task)
-    except Exception as exc:
-        return construir_resultado_error("FORMA", exc)
-
-    try:
-        datos = extraer_json_respuesta(raw)
-    except Exception as exc:
-        return construir_resultado_error("FORMA", exc)
-
-    # Hallazgos deterministas de folios (sin LLM, siempre confiables)
+    # LT corre en paralelo mientras el LLM procesa los chunks secuencialmente
+    lt_task = asyncio.create_task(_consultar_languagetool(texto))
     folio_hallazgos = _analizar_folios(texto)
 
-    # Combinar: CEDIA del LLM + novedades de LanguageTool + análisis de folios
+    try:
+        datos = await llamar_por_chunks(SYSTEM, lambda chunk: PLANTILLA.format(texto=chunk), texto=texto)
+        lt_hallazgos = await lt_task
+    except Exception as exc:
+        return construir_resultado_error("FORMA", exc)
+
     cedia_hallazgos = datos.get("hallazgos", [])
     combinados = _deduplicar(cedia_hallazgos, lt_hallazgos)
-    # Los hallazgos de folio tienen ubicacion distinta (nombre del adverbio/gerundio),
-    # pero pueden solaparse; usar deduplicar nuevamente para seguridad.
     combinados = _deduplicar(combinados, folio_hallazgos)
     datos["hallazgos"] = combinados
 

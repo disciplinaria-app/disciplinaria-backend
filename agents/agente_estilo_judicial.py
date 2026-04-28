@@ -6,7 +6,7 @@ Cubre: CEDIA-005 (gerundios incorrectos), CEDIA-012 (adverbios en -mente /
        argumental, que pertenece al Agente 3).
 """
 
-from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error
+from .base_agent import llamar_por_chunks, construir_resultado, construir_resultado_error
 from models.schemas import ResultadoAgente
 
 SYSTEM = """Eres CEDIA-ESTILO, experto en registro jurídico-forense colombiano.
@@ -60,10 +60,20 @@ M14 COMPONENTE DE FORMA — denominación formal:
 Detecta solo inconsistencias de registro formal (no de coherencia argumental):
 - Alternancia de "quejoso" y "denunciante" para el mismo sujeto bajo Ley 1123
   (bajo Ley 1123 el término correcto es QUEJOSO, no "denunciante")
-- Alternancia sin patrón claro entre "togado" / "disciplinado" / "investigado" /
-  "profesional" cuando podría generar ambigüedad de rol procesal
 - Uso de primera persona ("yo considero", "a mi juicio") en providencia:
   sustituir por impersonal o tercera persona
+
+M14-SIN · SINONIMIA CONTEXTUAL — unificación nominal del sujeto disciplinado (severidad MEDIA):
+Cuando en el mismo párrafo aparezcan DOS O MÁS de los siguientes términos referidos al
+mismo sujeto procesal, alertar por inconsistencia de unificación nominal:
+  disciplinado / abogado / letrado / togado / encartado / investigado / profesional
+El redactor debe elegir UNO y mantenerlo consistentemente en todo el documento.
+Ejemplo de error: "el disciplinado actuó de manera negligente cuando el togado recibió
+la notificación y el investigado no compareció" — tres denominaciones distintas para
+el mismo sujeto en el mismo párrafo.
+Corrección: elegir la denominación canónica (preferiblemente 'disciplinado' bajo Ley 1952
+o 'abogado'/'togado' bajo Ley 1123) y reemplazar las demás.
+Severidad: MEDIA — la sinonimia no genera nulidad pero debilita la contundencia del fallo.
 
 CRITERIOS DE SEVERIDAD CNDJ:
 - Alta: error que afecta la validez del acto o introduce ambigüedad interpretable
@@ -98,10 +108,8 @@ Responde con este JSON exacto (máximo 10 hallazgos):
 
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
-    prompt = PLANTILLA.format(texto=texto[:8000])
     try:
-        raw = await llamar_openrouter(SYSTEM, prompt)
-        datos = extraer_json_respuesta(raw)
+        datos = await llamar_por_chunks(SYSTEM, lambda chunk: PLANTILLA.format(texto=chunk), texto=texto)
         return construir_resultado("ESTILO JUDICIAL", datos)
     except Exception as exc:
         return construir_resultado_error("ESTILO JUDICIAL", exc)
