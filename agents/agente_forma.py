@@ -215,6 +215,21 @@ CEDIA-008 · CONCORDANCIA (M2a-M2e):
 - Concordancia verbal: sujeto plural con verbo singular ("los elementos probatorios demuestra")
 - EXCEPCIONES que NO son error: sujeto colectivo singular ("la Sala considera"), pasiva refleja
 
+CEDIA-008-G · CONCORDANCIA GÉNERO-NOMBRE PROPIO (severidad ALTA):
+Detectar cuando el artículo + sustantivo de rol tiene género opuesto al del nombre propio
+que le sigue en el mismo párrafo.
+  - Términos FEMENINOS de rol: 'la abogada', 'la disciplinada', 'la investigada',
+    'la quejosa', 'la defensora', 'la togada'
+  - Términos MASCULINOS de rol: 'el abogado', 'el disciplinado', 'el investigado',
+    'el quejoso', 'el defensor', 'el togado'
+  - Indicios de nombre masculino: CHRISTIAN, CARLOS, JORGE, LUIS, ANDRÉS, GABRIEL,
+    RAFAEL, GERARDO, RODRIGO, MANUEL, JUAN, PEDRO y similares
+  - Indicios de nombre femenino: MARÍA, ANA, LAURA, CAROLINA, ANDREA, CAMILA, DIANA,
+    PATRICIA, CLAUDIA, JESSICA y similares
+  - Ejemplo de error: 'la abogada CHRISTIAN GERARDO MARTÍNEZ' → 'el abogado CHRISTIAN GERARDO MARTÍNEZ'
+  - Ejemplo de error: 'el disciplinado MARÍA CAMILA TORRES' → 'la disciplinada MARÍA CAMILA TORRES'
+  - Severidad ALTA: la discordancia afecta la identificación del sujeto disciplinado
+
 CEDIA-010 · PUNTUACIÓN RAE 2010 — solo reglas inequívocas:
 - Coma entre sujeto y predicado: NUNCA ("el abogado[,] incurrió")
 - Coma antes de "que" sustantivo: NUNCA ("concluyó[,] que no podía")
