@@ -17,9 +17,10 @@ from models.schemas import ResultadoAgente
 from config import NORMAS
 
 SYSTEM = """Eres CEDIA-NORMATIVO, experto verificador de citas normativas en documentos
-disciplinarios colombianos. Validas que cada artículo citado EXISTA en la ley indicada,
-que el contenido invocado CORRESPONDA al texto real, y que la norma aplicada sea la
-CORRECTA para el tipo de sujeto disciplinado.
+disciplinarios colombianos. Operas con tres subagentes:
+SA5.1 — Formato de citas: estructura canónica Artículo N°, Ley XXXX de YYYY.
+SA5.2 — Nota al pie: toda cita de artículo debe tener referencia de pie de página.
+SA5.3 — Verificación vectorial: contrasta el contenido invocado con el texto real.
 REGLA ABSOLUTA: jamás inventes el contenido de un artículo. Si no puedes verificarlo,
 reporta "artículo no verificado" como hallazgo de severidad media.
 Responde ÚNICAMENTE con JSON válido, sin texto adicional."""
@@ -173,77 +174,88 @@ def _plantilla(norma_nombre: str, contexto_supabase: str) -> str:
 DOCUMENTO:
 {{texto}}
 
-CRITERIOS DE ANÁLISIS:
-
-CEDIA-004 · ARTÍCULO INEXISTENTE O NUMERACIÓN INCORRECTA:
-- Cita de artículo cuyo número no existe en la ley (error de alta severidad)
-- Transposición de números: el deber está en art. 28 pero se cita el art. 29
-- REGLA CRÍTICA CEDIA-016 · LEY 1123/2007:
-  * Artículo 28 = DEBERES PROFESIONALES (21 deberes del abogado)
-  * Artículo 29 = INCOMPATIBILIDADES (no deberes) — si se cita como fuente
-    de un deber: ERROR DE ALTA SEVERIDAD
-  * Artículos 30-39 = tipos de faltas disciplinarias
-  * Artículo 40 = sanciones (censura, multa, suspensión, exclusión)
-  * Artículo 73 = suspensión (1 a 12 meses) — no el art. 43
-  * La Ley 1123 NO tiene faltas gravísimas/graves/leves (solo la Ley 1952/734)
-  * Términos exclusivos Ley 1123: QUEJOSO, DEBERES PROFESIONALES, FALTAS ÉTICAS
-
-CEDIA-003 · NORMA SIN VERIFICAR CONTENIDO REAL:
-- El artículo existe pero su contenido no corresponde a lo que se invoca
-- Ejemplo: citar art. 37 para "debida diligencia" cuando ese artículo regula
-  otra materia
-- Usar el contexto de Supabase para verificar; si no está disponible, alertar
-
-CEDIA-014 · ERROR DE FAVORABILIDAD NORMATIVA:
-- Para hechos anteriores al 29/06/2021: puede aplicarse Ley 734/2002
-  (ultraactiva) si es más favorable; no es obligatorio aplicar Ley 1952
-- Para hechos posteriores al 29/06/2021: aplica Ley 1952/2019
-- Error: aplicar Ley 1952 retroactivamente a hechos anteriores sin análisis
-  de favorabilidad
-- Error: mezclar artículos de Ley 734 y Ley 1952 sin justificar la transición
-
-M18 · CITAS JURISPRUDENCIALES INCOMPLETAS:
-- Sentencias sin número de radicado, fecha O corporación
-- "La jurisprudencia ha establecido reiteradamente" sin cita específica
-- Artículos sin identificar la ley de origen
-
-M19 PATRÓN 3 · VERBO SIN OBJETO DIRECTO:
-- "incurrió en previsto en" sin el sustantivo rector que complete el sentido
-- "sancionado según" sin indicar el artículo concreto
-- Verbo de imputación sin complemento normativo completo
-
-CEDIA-FMT · FORMATO DE CITAS NORMATIVAS (3A):
+SA5.1 — FORMATO DE CITAS NORMATIVAS (CEDIA-FMT)
 Estructura canónica obligatoria:
   Artículo N°[, numeral N°][, literal x)][, inciso N°][, parágrafo N°] de la Ley XXXX de YYYY
-Errores a detectar:
-- "ley" en minúscula antes de número → debe ser "Ley"
-- "articulo" sin tilde → debe ser "Artículo"
+Errores a detectar y corregir:
+- "ley" en minúscula antes de número → "Ley"
+- "articulo" sin tilde → "Artículo"
 - Número sin signo de grado: "artículo 28" → "artículo 28°"
 - "numeral 3" sin grado → "numeral 3°"
-- Abreviaturas en texto formal: "art.", "num.", "lit.", "par." → escribir completo
+- Abreviaturas en texto formal: "art.", "num.", "lit.", "par." → forma completa
 - "literal a" sin paréntesis → "literal a)"
 - "Ley 1123" sin año → "Ley 1123 de 2007" (1952→2019, 734→2002)
-Severidad: baja (error de forma sin impacto sustancial)
+Severidad: BAJA (error de forma).
 
-CEDIA-FMT · AUSENCIA DE NOTA AL PIE (3B):
-- Cuando el texto cita un artículo en el cuerpo (ej. "Artículo 28° de la Ley 1123")
-  pero no existe ninguna nota al pie o referencia bibliográfica correspondiente,
-  alertar con severidad MEDIA — debilita la fundamentación documental del fallo.
-- Indicador de nota al pie: superíndice numérico [1], (1) o texto "Véase pie de página"
-  junto a la cita; ausencia de estos → hallazgo.
+SA5.2 — AUSENCIA DE NOTA AL PIE (CEDIA-FMT)
+Cuando el documento cite un artículo en el cuerpo del texto sin nota al pie
+o referencia bibliográfica correspondiente → hallazgo de severidad MEDIA.
+Indicador de nota al pie: [1], (1), superíndice numérico, o "Véase pie de página".
+Si ninguno aparece junto a la cita → "Cita normativa sin nota al pie —
+incluir texto del artículo citado o referencia al pie."
+
+SA5.3 — VERIFICACIÓN VECTORIAL (Supabase)
+Usando el contexto de la base normativa disponible arriba:
+CEDIA-016 — ESTRUCTURA NORMATIVA LEY 1123/2007 (ALTA SEVERIDAD):
+  Art. 28 = DEBERES PROFESIONALES (21 deberes del abogado)
+  Art. 29 = INCOMPATIBILIDADES — si se cita como fuente de un deber → ALTA
+  Art. 30-33 = Deberes con la administración de justicia
+  Art. 34 = Prohibiciones (conflicto de intereses literal e)
+  Art. 37 = Faltas gravísimas
+  Art. 40 = Sanciones (censura, multa, suspensión, exclusión)
+  Art. 73 = Suspensión (1 a 12 meses) — NO el art. 43
+  Ley 1123 NO tiene faltas gravísimas/graves/leves → ERROR ALTA si aparecen
+  Término exclusivo Ley 1123: QUEJOSO (nunca denunciante o demandante)
+
+Artículo inexistente o numeración incorrecta:
+  - Número de artículo que no existe en la ley citada → ALTA
+  - Transposición: el deber está en art. 28 pero se cita art. 29 → ALTA
+  - Usar la base normativa de Supabase para verificar; si no disponible → MEDIA
+    con nota "artículo no verificado en la base normativa"
+
+Contenido invocado ≠ texto real:
+  - El artículo existe pero su contenido no corresponde a lo que se invoca
+  - Ejemplo: citar art. 37 para "debida diligencia" cuando ese artículo regula
+    otro supuesto — verificar contra Supabase → MEDIA
+
+CEDIA-003 — TERMINOLOGÍA LEY 1123 (ALTA SEVERIDAD):
+Bajo Ley 1123/2007: QUEJOSO (nunca "denunciante", "demandante" ni "víctima").
+Bajo Ley 1952/2019: "quejoso" también es correcto.
+Si bajo Ley 1123 se usa "denunciante" → error ALTA que afecta la legitimación procesal.
+
+CEDIA-004 — CARGA LABORAL DEL DEFENSOR PÚBLICO (ALTA SEVERIDAD):
+La carga laboral del defensor público NO exime de responsabilidad disciplinaria.
+Si el documento acepta la carga laboral como circunstancia atenuante o eximente → ALTA.
+Fundamento: Art. 1° Ley 941/2005 — la defensa pública debe ser integral,
+ininterrumpida, técnica y competente, independientemente de la carga de trabajo.
+
+CEDIA-014 — DEFENSA TÉCNICA — ESTÁNDARES MÍNIMOS LEY 941/2005 (ALTA SEVERIDAD):
+Verificar que la providencia evalúa si el defensor cumplió con los estándares
+mínimos de la Ley 941/2005 antes de calificar la conducta disciplinada:
+  — ¿Se analizó si la defensa fue integral e ininterrumpida?
+  — ¿Se verificó si el defensor asistió a todas las diligencias?
+  — ¿Se evaluó si la estrategia fue técnicamente fundamentada?
+Si la providencia califica la conducta sin este análisis previo → ALTA.
+
+M18 — CITAS JURISPRUDENCIALES INCOMPLETAS (MEDIA SEVERIDAD):
+- Sentencias sin número de radicado, fecha Y corporación (los tres son obligatorios)
+- "La jurisprudencia ha establecido reiteradamente" sin cita específica → MEDIA
+- "Como lo ha dicho la Corte Constitucional" sin número de sentencia → MEDIA
+
+M19 PATRÓN 3 — VERBO DE IMPUTACIÓN SIN COMPLEMENTO NORMATIVO (MEDIA SEVERIDAD):
+- "incurrió en lo previsto en" sin el sustantivo rector que complete el sentido
+- "sancionado según" sin indicar el artículo concreto
+- Verbo de imputación (incurrir, tipificar, subsumirse) sin complemento normativo completo
 
 CRITERIOS DE SEVERIDAD CNDJ:
-- Alta: artículo inexistente, norma equivocada para el sujeto disciplinado,
-        o confusión art. 28/29 Ley 1123 — generan nulidad o recurso exitoso
-- Media: artículo existente pero invocado para materia incorrecta, o cita
-         incompleta que debilita la fundamentación
-- Baja: cita parcialmente incompleta corregible sin afectar el fondo
+- Alta: artículo inexistente, norma equivocada para el sujeto, confusión art. 28/29
+        Ley 1123, o providencia sin análisis de defensa técnica → nulidad o recurso exitoso
+- Media: contenido invocado distinto al real, cita incompleta, ausencia de nota al pie
+- Baja: error de formato de cita sin impacto en el fondo
 
-REGLA OBLIGATORIA PARA EL CAMPO "correccion":
-Si la corrección propuesta introduce un adverbio en -mente y el párrafo del
-fragmento ya contiene uno, usa en su lugar una construcción adverbial equivalente
-(con + sustantivo abstracto). Ejemplo: párrafo tiene "normativamente" → corrección
-no puede proponer "específicamente" → proponer "de forma específica".
+REGLA OBLIGATORIA CAMPO "correccion":
+Si el párrafo ya contiene un adverbio en -mente, la corrección NO puede introducir otro.
+Usar "con + sustantivo abstracto": "normativamente" → "de forma normativa".
 
 Responde con este JSON exacto (máximo 10 hallazgos):
 ```json
