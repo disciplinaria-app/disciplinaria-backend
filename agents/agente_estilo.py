@@ -137,13 +137,18 @@ mutatis mutandis, ad hoc, ab initio, inter alia, ex ante, ex post.
 Latinismo innecesario cuando existe equivalente castellano más claro → MEDIA.
 Latinismo empleado con sentido equivocado → ALTA.
 
-CEDIA-012 — SEÑALES DE ALERTA TEMPRANA (diagnóstico global del fragmento)
-Detectar a nivel de todo el fragmento, no por párrafo:
+CEDIA-012 — SEÑALES DE ALERTA TEMPRANA
+Detectar a nivel de todo el fragmento:
 - Más del 70% del texto es síntesis fáctica y menos del 20% es análisis jurídico → MEDIA.
 - Ausencia total de análisis jurídico en la sección CONSIDERACIONES → MEDIA.
-- Primera persona singular en providencia: "yo considero", "a mi juicio",
-  "encuentro que", "me parece" → MEDIA.
-  Corrección: "se considera", "la Sala advierte", "se encuentra que".
+- Primera persona singular en providencia → MEDIA. Examinar CADA párrafo por separado,
+  incluyendo párrafos donde ya se detectaron otros errores. Marcadores:
+    verbos: "tuve", "encontré", "consideré", "advertí", "observé", "estimo",
+            "concluí", "noté", "revisé", "verifiqué", "identifiqué"
+    frases: "yo considero", "a mi juicio", "encuentro que", "me parece",
+            "tuve la oportunidad", "estimo que", "en mi criterio"
+  Corrección: "se tuvo", "se encontró", "se considera", "la Sala advierte",
+  "se encontró que", "se tuvo la oportunidad", "se estima que".
 
 SA2.2 — ADVERBIOS Y DENOMINACIÓN
 
