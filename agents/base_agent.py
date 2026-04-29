@@ -1,8 +1,11 @@
 import json
+import logging
 import re
 import httpx
 from config import OPENROUTER_API_KEY, OPENROUTER_BASE_URL, MODEL
 from models.schemas import Hallazgo, ResultadoAgente
+
+logger = logging.getLogger(__name__)
 
 TIMEOUT = httpx.Timeout(120.0, connect=10.0)
 
@@ -140,8 +143,8 @@ async def llamar_por_chunks(
             ultimo_resumen = datos.get("resumen", ultimo_resumen)
             fortalezas.extend(datos.get("fortalezas", []))
             recomendaciones.extend(datos.get("recomendaciones", []))
-        except Exception:
-            pass
+        except Exception as _exc:
+            logger.error("[llamar_por_chunks] chunk falló: %s: %s", type(_exc).__name__, _exc)
 
     return {
         "puntaje": sum(puntajes) / len(puntajes) if puntajes else 50.0,

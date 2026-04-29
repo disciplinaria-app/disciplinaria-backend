@@ -1,9 +1,12 @@
 import asyncio
 import io
+import logging
 import time
 import uuid
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s %(name)s %(message)s")
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
