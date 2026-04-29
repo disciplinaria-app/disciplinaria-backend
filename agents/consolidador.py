@@ -162,7 +162,7 @@ Responde con este JSON exacto:
 
 async def consolidar(resultados: list[ResultadoAgente], norma: str) -> AnalisisResponse:
     hallazgos = _agregar_hallazgos(resultados)
-    puntaje = _puntaje_ponderado(resultados)
+    puntaje = calcular_score_determinista(hallazgos)
     nivel = _calcular_nivel(puntaje)
     estadisticas = _construir_estadisticas(resultados, norma, hallazgos)
 
