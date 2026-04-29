@@ -24,7 +24,7 @@ async def llamar_openrouter(system_prompt: str, user_prompt: str, max_tokens: in
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        "temperature": 0.2,
+        "temperature": 0,
         "max_tokens": max_tokens,
     }
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
