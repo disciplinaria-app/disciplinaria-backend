@@ -8,6 +8,7 @@ from dataclasses import dataclass
 from fastapi import FastAPI, File, Form, HTTPException, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 
 from config import ALLOWED_ORIGINS, OPENROUTER_API_KEY
 from models.schemas import AnalisisRequest, AnalisisResponse, AplicarRequest
@@ -252,3 +253,9 @@ async def aplicar_correcciones(archivo_id: str, body: AplicarRequest) -> Respons
         media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         headers={"Content-Disposition": f'attachment; filename="{nombre_descarga}"'},
     )
+
+
+# ── Interfaz web (servida desde /app) ────────────────────────────────────────
+# Acceso: http://localhost:8000/app  |  https://backend.railway.app/app
+# El mount va al final para no interceptar las rutas de la API.
+app.mount("/app", StaticFiles(directory="frontend", html=True), name="frontend")
