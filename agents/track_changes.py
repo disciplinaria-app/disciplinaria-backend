@@ -105,25 +105,30 @@ def _find_paragraph(doc: Document, texto: str) -> int | None:
 
 def _run_map(para_el) -> list[tuple[int, int, object, str]]:
     """
-    Retorna [(start, end, run_el, text)] para todos los <w:r> del párrafo,
-    incluyendo los anidados dentro de <w:hyperlink>, <w:ins>, <w:del>, etc.
+    Retorna [(start, end, run_el, text)] para TODOS los <w:r> del párrafo,
+    recursivamente a cualquier profundidad de anidamiento.
+    Excluye runs dentro de <w:del> (texto eliminado no visible).
     """
     result, pos = [], 0
-    # Buscar en hijos directos y un nivel más (hyperlink, ins, del, smartTag…)
-    containers = [para_el] + [
-        c for c in para_el
-        if etree.QName(c).localname in ("hyperlink", "ins", "del", "smartTag", "sdt")
-    ]
     seen = set()
-    for container in containers:
-        for r in container.findall(f"{{{W}}}r"):
-            if id(r) in seen:
-                continue
-            seen.add(id(r))
-            t_el = r.find(f"{{{W}}}t")
-            text = (t_el.text or "") if t_el is not None else ""
-            result.append((pos, pos + len(text), r, text))
-            pos += len(text)
+    for r in para_el.iter(f"{{{W}}}r"):
+        if id(r) in seen:
+            continue
+        seen.add(id(r))
+        # Subir hasta para_el buscando un ancestro <w:del>
+        ancestor, in_del = r.getparent(), False
+        while ancestor is not None and ancestor is not para_el:
+            if etree.QName(ancestor).localname == "del":
+                in_del = True
+                break
+            ancestor = ancestor.getparent()
+        if in_del:
+            continue
+        # Recopilar todos los <w:t> del run (usualmente uno, a veces varios)
+        texts = [t.text or "" for t in r.findall(f"{{{W}}}t")]
+        text = "".join(texts)
+        result.append((pos, pos + len(text), r, text))
+        pos += len(text)
     return result
 
 
@@ -415,6 +420,11 @@ def _inject_comments(docx_bytes: bytes, comment_xmls: list[str]) -> bytes:
 
 # ── Corrección directa (sin track changes) ───────────────────────────────────
 
+def _norm_ws(s: str) -> str:
+    """Normaliza espacios tipográficos para matching robusto."""
+    return re.sub(r"[     \t]+", " ", s)
+
+
 def _reemplazar_texto_en_parrafo(para_el, ubicacion: str, correccion: str) -> bool:
     """
     Sustituye ubicacion por correccion directamente en los <w:t> del párrafo.
@@ -426,16 +436,19 @@ def _reemplazar_texto_en_parrafo(para_el, ubicacion: str, correccion: str) -> bo
         return False
 
     combined = "".join(t for _, _, _, t in rmap)
-    pos = combined.lower().find(ubicacion.lower().strip())
+    needle = _norm_ws(ubicacion).lower().strip()
+    haystack = _norm_ws(combined).lower()
+
+    pos = haystack.find(needle)
     if pos == -1:
         return False
 
-    end_pos = pos + len(ubicacion)
+    end_pos = pos + len(needle)
     affected = [(s, e, r, t) for s, e, r, t in rmap if s < end_pos and e > pos]
     if not affected:
         return False
 
-    # Texto que precede y sigue al match dentro de los runs afectados
+    # Texto que precede y sigue al match dentro del rango afectado
     prefix = combined[affected[0][0] : pos]
     suffix = combined[end_pos : affected[-1][1]]
 
@@ -445,12 +458,15 @@ def _reemplazar_texto_en_parrafo(para_el, ubicacion: str, correccion: str) -> bo
     if t_el is None:
         t_el = OxmlElement("w:t")
         first_r.append(t_el)
+    # Eliminar <w:t> adicionales del primer run si los hubiera
+    for extra in first_r.findall(f"{{{W}}}t")[1:]:
+        first_r.remove(extra)
 
     t_el.text = prefix + correccion + suffix
     if t_el.text and (t_el.text[0] == " " or t_el.text[-1] == " "):
         t_el.set(XML_SPACE, "preserve")
 
-    # Eliminar los runs sobrantes (los que fueron absorbidos en el primero)
+    # Eliminar los runs sobrantes absorbidos en el primero
     for _, _, r_el, _ in affected[1:]:
         parent = r_el.getparent()
         if parent is not None:
