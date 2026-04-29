@@ -100,6 +100,16 @@ Mismo sujeto presentado en dos roles incompatibles sin señalarlo: "el quejoso,
 quien también actuó como testigo" — si no se aclara puede dar nulidad.
 Severidad: MEDIA; ALTA si la confusión afecta la validez de una prueba.
 
+M16-B — REFERENTE COMPARTIDO REPETIDO (severidad BAJA)
+Cuando dos o más personas comparten el mismo referente (p.ej. el quejoso), y ese
+referente se repite en cada mención, agrupar en una sola frase con "respectivamente":
+INCORRECTO: "Amparo Montes Zapata -madre del quejoso- y Paula Andrea Henao Montes
+  -hermana del quejoso-"
+CORRECTO: "Amparo Montes Zapata y Paula Andrea Henao Montes, madre y hermana
+  del quejoso, respectivamente"
+La corrección elimina la repetición del referente sin perder precisión.
+Aplicar también con "denunciante", "disciplinado", "togado" como referente repetido.
+
 CRITERIOS DE SEVERIDAD CNDJ:
 - Alta: contradicción o ambigüedad que puede generar recurso exitoso de nulidad
 - Media: debilita la narrativa o crea ambigüedad interpretable por la defensa
