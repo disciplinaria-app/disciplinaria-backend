@@ -256,6 +256,8 @@ async def aplicar_correcciones(archivo_id: str, body: AplicarRequest) -> Respons
 
 
 # ── Interfaz web (servida desde /app) ────────────────────────────────────────
-# Acceso: http://localhost:8000/app  |  https://backend.railway.app/app
+# Acceso: http://localhost:8000/app  |  https://disciplinaria.app/app
 # El mount va al final para no interceptar las rutas de la API.
-app.mount("/app", StaticFiles(directory="frontend", html=True), name="frontend")
+import os as _os
+if _os.path.isdir("frontend"):
+    app.mount("/app", StaticFiles(directory="frontend", html=True), name="frontend")
