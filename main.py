@@ -98,6 +98,18 @@ async def health():
     return {"status": "ok"}
 
 
+@app.get("/test-llm", summary="Diagnóstico: prueba llamada LLM mínima")
+async def test_llm():
+    from agents.base_agent import llamar_openrouter
+    try:
+        resp = await llamar_openrouter(
+            "Eres un asistente.", 'Responde SOLO con {"ok":true}', max_tokens=20
+        )
+        return {"status": "ok", "response": resp}
+    except Exception as exc:
+        return {"status": "error", "error": type(exc).__name__, "detail": str(exc)}
+
+
 @app.post(
     "/analizar",
     response_model=AnalisisResponse,
