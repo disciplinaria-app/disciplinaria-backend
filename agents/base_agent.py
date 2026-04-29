@@ -108,11 +108,13 @@ def split_chunks(texto: str, chunk_words: int = 3000, overlap_words: int = 200) 
 
 
 def deduplicar_hallazgos(hallazgos: list[dict]) -> list[dict]:
-    """Elimina hallazgos duplicados usando los primeros 60 caracteres de ubicacion como clave."""
+    """Elimina hallazgos duplicados usando ubicacion + primeras palabras del error como clave."""
     vistos: set[str] = set()
     resultado: list[dict] = []
     for h in hallazgos:
-        key = h.get("ubicacion", "")[:60].lower()
+        ubicacion = h.get("ubicacion", "")[:50].lower().strip()
+        error_words = " ".join(h.get("error", "").lower().split()[:6])
+        key = f"{ubicacion}|{error_words}"
         if key not in vistos:
             vistos.add(key)
             resultado.append(h)

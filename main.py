@@ -1,4 +1,5 @@
 import asyncio
+import hashlib
 import io
 import logging
 import time
@@ -37,6 +38,24 @@ class _EntryTemp:
 
 _archivos_temp: dict[str, _EntryTemp] = {}
 _EXPIRA_SEG = 3600  # 1 hora
+
+# Caché de resultados por hash del documento — evita re-análisis del mismo archivo
+_resultado_cache: dict[str, "AnalisisResponse"] = {}
+_CACHE_MAX = 50  # máximo de entradas en memoria
+
+
+def _cache_key(texto: str, norma: str) -> str:
+    return hashlib.sha256(f"{norma}:{texto}".encode()).hexdigest()
+
+
+def _cache_get(texto: str, norma: str) -> "AnalisisResponse | None":
+    return _resultado_cache.get(_cache_key(texto, norma))
+
+
+def _cache_set(texto: str, norma: str, resultado: "AnalisisResponse") -> None:
+    if len(_resultado_cache) >= _CACHE_MAX:
+        _resultado_cache.pop(next(iter(_resultado_cache)))
+    _resultado_cache[_cache_key(texto, norma)] = resultado
 
 
 def _limpiar_expirados() -> None:
@@ -128,6 +147,10 @@ async def analizar(request: AnalisisRequest) -> AnalisisResponse:
             detail="El servicio de IA no está configurado. Contacte al administrador.",
         )
 
+    cached = _cache_get(request.texto, request.norma)
+    if cached:
+        return cached
+
     inicio = time.monotonic()
 
     resultados = await asyncio.gather(
@@ -144,6 +167,7 @@ async def analizar(request: AnalisisRequest) -> AnalisisResponse:
     duracion = round(time.monotonic() - inicio, 2)
     respuesta.estadisticas.distribucion_puntajes["_duracion_segundos"] = duracion
 
+    _cache_set(request.texto, request.norma, respuesta)
     return respuesta
 
 
@@ -180,16 +204,20 @@ async def analizar_archivo(
 
     inicio = time.monotonic()
 
-    resultados = await asyncio.gather(
-        agente_forma.ejecutar(texto, norma),
-        agente_estilo.ejecutar(texto, norma),
-        agente_coherencia.ejecutar(texto, norma),
-        agente_argumentacion.ejecutar(texto, norma),
-        agente_normativo.ejecutar(texto, norma),
-        return_exceptions=False,
-    )
-
-    respuesta = await consolidador.consolidar(list(resultados), norma)
+    cached = _cache_get(texto, norma)
+    if cached:
+        respuesta = cached
+    else:
+        resultados = await asyncio.gather(
+            agente_forma.ejecutar(texto, norma),
+            agente_estilo.ejecutar(texto, norma),
+            agente_coherencia.ejecutar(texto, norma),
+            agente_argumentacion.ejecutar(texto, norma),
+            agente_normativo.ejecutar(texto, norma),
+            return_exceptions=False,
+        )
+        respuesta = await consolidador.consolidar(list(resultados), norma)
+        _cache_set(texto, norma, respuesta)
 
     # Almacenar original + hallazgos para descarga selectiva posterior
     from pathlib import Path as _Path

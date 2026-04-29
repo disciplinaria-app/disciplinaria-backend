@@ -6,7 +6,7 @@ una llamada adicional al LLM.
 """
 
 import asyncio
-from .base_agent import llamar_openrouter, extraer_json_respuesta
+from .base_agent import extraer_json_respuesta
 from models.schemas import Hallazgo, ResultadoAgente, AnalisisResponse, Estadisticas
 from config import NORMAS
 
@@ -102,62 +102,43 @@ def _construir_estadisticas(
     )
 
 
-async def _generar_resumen_ejecutivo(
+def _generar_resumen_ejecutivo(
     resultados: list[ResultadoAgente], norma: str
 ) -> tuple[str, list[str], list[str], list[str]]:
-    """Llama al LLM para generar resumen, errores top, fortalezas y recomendaciones consolidados."""
-    agentes_txt = "\n\n".join(
-        f"### {r.agente} (Puntaje: {r.puntaje}/100)\n"
-        f"Resumen: {r.resumen}\n"
-        f"Hallazgos de alta severidad: "
-        f"{'; '.join(h.error for h in r.hallazgos if h.severidad == 'alta') or 'Ninguno'}\n"
-        f"Fortalezas: {'; '.join(r.fortalezas) or 'Ninguna'}\n"
-        f"Recomendaciones: {'; '.join(r.recomendaciones) or 'Ninguna'}"
-        for r in resultados
-    )
-    prompt = f"""Consolida los siguientes análisis de 5 agentes especializados sobre un documento
-disciplinario colombiano bajo la {NORMAS.get(norma, norma)}:
+    """Construye resumen, errores top, fortalezas y recomendaciones de forma determinista
+    desde los datos ya producidos por los 5 agentes — sin llamada LLM adicional."""
+    # Errores: primero altas, luego medias; deduplicados por texto exacto
+    errores_top = list(dict.fromkeys(
+        h.error for r in resultados
+        for h in sorted(r.hallazgos, key=lambda h: h.nivel_severidad, reverse=True)
+        if h.severidad in ("alta", "media")
+    ))[:5]
 
-{agentes_txt}
+    # Fortalezas: una por agente, en orden de puntaje descendente
+    agentes_ord = sorted(resultados, key=lambda r: r.puntaje, reverse=True)
+    todas_fortalezas = list(dict.fromkeys(
+        f for r in agentes_ord for f in r.fortalezas
+    ))[:3]
 
-Genera una consolidación inteligente que:
-1. Integre los hallazgos más importantes de todos los agentes
-2. Elimine duplicados y agrupe hallazgos relacionados
-3. Priorice los errores más graves (alta severidad primero)
-4. Formule recomendaciones accionables y específicas
+    # Recomendaciones: de los agentes con menor puntaje primero
+    agentes_asc = sorted(resultados, key=lambda r: r.puntaje)
+    todas_recs = list(dict.fromkeys(
+        rec for r in agentes_asc for rec in r.recomendaciones
+    ))[:4]
 
-Responde con este JSON exacto:
-```json
-{{
-  "resumen": "<resumen ejecutivo consolidado de 3-5 oraciones>",
-  "errores": ["<error crítico 1>", "<error crítico 2>", "<error crítico 3>", "<error crítico 4>", "<error crítico 5>"],
-  "fortalezas": ["<fortaleza 1>", "<fortaleza 2>", "<fortaleza 3>"],
-  "recomendaciones": ["<recomendación 1>", "<recomendación 2>", "<recomendación 3>", "<recomendación 4>"]
-}}
-```"""
-    try:
-        raw = await llamar_openrouter(SYSTEM_CONSOLIDADOR, prompt)
-        datos = extraer_json_respuesta(raw)
-        return (
-            datos.get("resumen", ""),
-            datos.get("errores", []),
-            datos.get("fortalezas", []),
-            datos.get("recomendaciones", []),
-        )
-    except Exception:
-        # Fallback sin LLM: construir desde hallazgos directamente
-        errores_top = list(dict.fromkeys(
-            h.error for r in resultados
-            for h in r.hallazgos if h.severidad == "alta"
-        ))[:5]
-        todas_fortalezas = list(dict.fromkeys(
-            f for r in resultados for f in r.fortalezas
-        ))[:3]
-        todas_recs = list(dict.fromkeys(
-            rec for r in resultados for rec in r.recomendaciones
-        ))[:4]
-        resumen = " | ".join(r.resumen for r in resultados if r.resumen)[:500]
-        return resumen, errores_top, todas_fortalezas, todas_recs
+    # Resumen: agente con menor puntaje da el tono + conteo de hallazgos por severidad
+    alta = sum(1 for r in resultados for h in r.hallazgos if h.severidad == "alta")
+    media = sum(1 for r in resultados for h in r.hallazgos if h.severidad == "media")
+    baja = sum(1 for r in resultados for h in r.hallazgos if h.severidad == "baja")
+    critico = agentes_asc[0] if agentes_asc else None
+    base = critico.resumen if critico and critico.resumen else ""
+    resumen = (
+        f"{base} "
+        f"Se detectaron {alta} hallazgo(s) de alta severidad, {media} de media y {baja} de baja "
+        f"en los cinco módulos de revisión (forma, estilo, coherencia, argumentación y normativo)."
+    ).strip()
+
+    return resumen, errores_top, todas_fortalezas, todas_recs
 
 
 async def consolidar(resultados: list[ResultadoAgente], norma: str) -> AnalisisResponse:
@@ -166,7 +147,7 @@ async def consolidar(resultados: list[ResultadoAgente], norma: str) -> AnalisisR
     nivel = _calcular_nivel(puntaje)
     estadisticas = _construir_estadisticas(resultados, norma, hallazgos)
 
-    resumen, errores, fortalezas, recomendaciones = await _generar_resumen_ejecutivo(
+    resumen, errores, fortalezas, recomendaciones = _generar_resumen_ejecutivo(
         resultados, norma
     )
 
