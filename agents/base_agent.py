@@ -140,8 +140,8 @@ async def llamar_por_chunks(
             ultimo_resumen = datos.get("resumen", ultimo_resumen)
             fortalezas.extend(datos.get("fortalezas", []))
             recomendaciones.extend(datos.get("recomendaciones", []))
-        except Exception:
-            pass
+        except Exception as _chunk_err:
+            print(f"[CHUNK-ERROR] {type(_chunk_err).__name__}: {_chunk_err} | raw[:300]={raw[:300] if 'raw' in dir() else 'N/A'}", flush=True)
 
     return {
         "puntaje": sum(puntajes) / len(puntajes) if puntajes else 50.0,

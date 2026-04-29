@@ -13,11 +13,66 @@ Los hallazgos de ambas fuentes se fusionan y deduplicam antes de retornar.
 """
 
 import asyncio
+import re
 import httpx
 
 from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error, llamar_por_chunks
 from config import LT_USERNAME, LT_API_KEY
 from models.schemas import Hallazgo, ResultadoAgente
+
+# ── Detección determinista (sin LLM) ─────────────────────────────────────────
+
+_RE_DIGIT_O  = re.compile(r"\b(\d+)[Oo]\b")                       # 1O, 10O, 2O
+_RE_PALABRAS_PEGADAS = re.compile(r"[a-záéíóúüñ]{3,}[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+")
+_RE_VERBO_SIN_TILDE  = re.compile(
+    r"\b(considero|advirtio|profirio|resolvio|concluyo|ordeno|evidencio|"
+    r"señalo|manifesto|absolvio|incurrio|negó|reitero|preciso|configuro|"
+    r"determino|estableci[oó]|sostuvo)\b"
+)
+_FALSOS_POSITIVOS_TILDE = {
+    "considero", "advirtio", "profirio", "resolvio", "concluyo",
+    "ordeno", "evidencio", "señalo", "manifesto", "absolvio",
+    "incurrio", "negó", "reitero", "preciso", "configuro",
+    "determino", "sostuvo",
+}
+
+def _detectar_errores_forma(texto: str) -> list[dict]:
+    """Detecta sin LLM: dígito-O confundido con cero, palabras pegadas sin espacio."""
+    hallazgos: list[dict] = []
+
+    # Dígito O confundido con 0 (ej: "artículo 1O", "el 1O de diciembre")
+    for m in _RE_DIGIT_O.finditer(texto):
+        ctx = texto[max(0, m.start()-30):m.end()+30].replace("\n", " ")
+        correcto = m.group(0).replace("O", "0").replace("o", "0")
+        hallazgos.append({
+            "modulo": "CEDIA-011",
+            "ubicacion": m.group(0),
+            "error": f"'{m.group(0)}' — letra O usada como dígito cero. Contexto: …{ctx}…",
+            "justificacion": "Error tipográfico: O (letra) ≠ 0 (cero). Genera ambigüedad en referencias normativas.",
+            "correccion": correcto,
+            "severidad": "alta",
+        })
+
+    # Palabras pegadas sin espacio (CamelCase no esperado)
+    _skip = {"QuinteroAriza", "zdkNzg"}
+    for m in _RE_PALABRAS_PEGADAS.finditer(texto):
+        w = m.group(0)
+        # Excluir URLs, bases64, nombres conocidos en inglés/técnicos
+        if len(w) > 20 or any(c in w for c in "/=+"):
+            continue
+        ctx = texto[max(0, m.start()-25):m.end()+25].replace("\n", " ")
+        # Insertar espacio antes de la mayúscula interior
+        corr = re.sub(r"([a-záéíóúüñ])([A-ZÁÉÍÓÚÜÑ])", r"\1 \2", w)
+        hallazgos.append({
+            "modulo": "CEDIA-011",
+            "ubicacion": w,
+            "error": f"Palabras pegadas sin espacio: '{w}'. Contexto: …{ctx}…",
+            "justificacion": "Regla RAE: dos palabras distintas deben separarse con espacio.",
+            "correccion": corr,
+            "severidad": "alta",
+        })
+
+    return hallazgos
 
 # ── Configuración ─────────────────────────────────────────────────────────────
 
@@ -250,6 +305,8 @@ async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
     # LT corre en paralelo mientras el LLM procesa los chunks secuencialmente
     lt_task = asyncio.create_task(_consultar_languagetool(texto))
 
+    det_hallazgos = _detectar_errores_forma(texto)
+
     try:
         datos = await llamar_por_chunks(SYSTEM, lambda chunk: PLANTILLA.format(texto=chunk), texto=texto)
         lt_hallazgos = await lt_task
@@ -257,6 +314,6 @@ async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
         return construir_resultado_error("FORMA", exc)
 
     cedia_hallazgos = datos.get("hallazgos", [])
-    datos["hallazgos"] = _deduplicar(cedia_hallazgos, lt_hallazgos)
+    datos["hallazgos"] = _deduplicar(cedia_hallazgos + det_hallazgos, lt_hallazgos)
 
     return construir_resultado("FORMA", datos)
