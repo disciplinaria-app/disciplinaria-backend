@@ -6,16 +6,20 @@ Cubre: CEDIA-007 (ortografía/tildes), CEDIA-008 (concordancia), CEDIA-010 (punt
        sin número).
 
 Fuentes combinadas (en paralelo):
-  1. LLM (OpenRouter/Claude) — criterios CEDIA específicos del derecho disciplinario
-  2. LanguageTool Premium    — ortografía, gramática y puntuación de cobertura amplia
+  1. Detección determinista (deteccion_forma.py) — reglas mecánicas: tildes de lista
+     cerrada, espaciado numérico, O/0, palabras unidas, redundancias, régimen, dequeísmo
+  2. LLM (OpenRouter) — reglas que exigen juicio contextual: concordancia, tiempos,
+     repetición morfológica, inserción espuria
+  3. LanguageTool Premium — ortografía, gramática y puntuación de cobertura amplia
 
-Los hallazgos de ambas fuentes se fusionan y deduplicam antes de retornar.
+Prioridad en deduplicación: determinista > LLM > LanguageTool.
 """
 
 import asyncio
 import httpx
 
 from .base_agent import llamar_openrouter, extraer_json_respuesta, construir_resultado, construir_resultado_error, llamar_por_chunks
+from .deteccion_forma import analizar_deterministico
 from config import LT_USERNAME, LT_API_KEY
 from models.schemas import Hallazgo, ResultadoAgente
 
@@ -111,17 +115,24 @@ async def _consultar_languagetool(texto: str) -> list[dict]:
     return hallazgos
 
 
-def _deduplicar(cedia: list[dict], lt: list[dict]) -> list[dict]:
+def _deduplicar(*fuentes: list[dict]) -> list[dict]:
     """
-    Elimina hallazgos de LT que ya están cubiertos por CEDIA (misma ubicacion).
-    Prioriza CEDIA sobre LT en caso de solapamiento.
+    Fusiona hallazgos de varias fuentes en orden de prioridad (la primera gana).
+    Un hallazgo se descarta si su ubicacion ya está cubierta, o si su ubicacion
+    contiene/está contenida en una ya vista (solapamiento parcial).
     """
-    ubicaciones_cedia = {h["ubicacion"].lower().strip() for h in cedia}
-    lt_nuevos = [
-        h for h in lt
-        if h["ubicacion"].lower().strip() not in ubicaciones_cedia
-    ]
-    return cedia + lt_nuevos
+    resultado: list[dict] = []
+    vistas: list[str] = []
+    for fuente in fuentes:
+        for h in fuente:
+            ubi = h["ubicacion"].lower().strip()
+            if not ubi:
+                continue
+            if any(ubi in v or v in ubi for v in vistas):
+                continue
+            vistas.append(ubi)
+            resultado.append(h)
+    return resultado
 
 
 # ── Prompt CEDIA ──────────────────────────────────────────────────────────────
@@ -144,18 +155,18 @@ No interpretes contenido jurídico. Solo verifica errores objetivos de escritura
 DOCUMENTO:
 {texto}
 
-M1 — ORTOGRAFÍA Y TILDES
-Detectar: verbos sin tilde que cambian significado (afirmo→afirmó, continuo→continuó,
-ordeno→ordenó, sanciono→sancionó, resolvio→resolvió, practico→practicó).
-Tildes diacríticas obligatorias: él/el, tú/tu, más/mas, sí/si, aún/aun, sé/se.
-Esdrújulas: jurídico, técnico, artículo, número, específico, ámbito, cómputo.
-Verbos pretérito: evidenció, ordenó, resolvió, concluyó, señaló, consideró, advirtió.
+M1 — ORTOGRAFÍA CONTEXTUAL (solo casos que exigen leer el contexto)
+Verbos donde la forma sin tilde TAMBIÉN es palabra válida — decidir por contexto:
+"el juez ordeno" → "ordenó" (3ª persona pretérito) pero "yo ordeno" es correcto.
+Aplica a: afirmo/afirmó, ordeno/ordenó, considero/consideró, señalo/señaló,
+evidencio/evidenció, continuo/continuó, practico/practicó, sanciono/sancionó.
+Tildes diacríticas por contexto: él/el, tú/tu, más/mas, sí/si, aún/aun, sé/se.
 Tildes incorrectas: "previo", "continuo" como adjetivos NO llevan tilde.
-Régimen preposicional: "de acuerdo con" (no "a"), "acorde con" (no "a"),
-"respecto de" (no "a"), "en razón de" (no "a razón de").
-Dequeísmo: "consideró de que" → "consideró que".
+Homófonos: callo/cayó, haber/a ver, porque/por qué/porqué.
 Queísmo: "se percató que" → "se percató de que".
-No reportar: nombres propios extranjeros, términos técnicos especializados sin equivalente.
+No reportar: nombres propios extranjeros, términos técnicos sin equivalente,
+tildes de lista fija (incurrio, resolvio…) ni espaciado numérico — eso lo
+detecta otro módulo; no lo dupliques.
 
 M2 — CONCORDANCIA NOMINAL (incluye verificación género-nombre propio)
 Regla: artículo, sustantivo y adjetivo deben concordar en género y número.
@@ -194,25 +205,15 @@ Excepción: términos técnicos sin sinónimo real (disciplinado, quejoso, falta
 CRÍTICO: la corrección NO puede usar la misma raíz léxica que la palabra errónea.
 "comunicar/comunicación" → NO "hacer comunicación" → SÍ "transmitir / informar".
 
-CEDIA-018 — REDUNDANCIAS FIJAS
-"el día lunes" → "el lunes", "el mes de agosto" → "agosto",
-"resultado final" → "resultado", "regresar de nuevo" → "regresar",
-"subir arriba" → "subir", "en horas de la mañana" → la hora específica si consta.
-"En agosto de 2023" es CORRECTO — no reportar.
-CRÍTICO: la corrección NO puede introducir otro adverbio en -mente.
-
-CEDIA-017 — INSERCIÓN ESPURIA DE PREPOSICIÓN
-Solo aplica cuando la preposición NO es requerida por el régimen verbal del verbo principal.
-Patrón de error: verbo transitivo + preposición intrusa + complemento directo.
-"le informó de que vendría" → "informó que vendría"
-"pidió de que firmara" → "pidió que firmara"
-"explicó de que la norma" → "explicó que la norma"
-VERBOS QUE RIGEN "con" POR SU PROPIO RÉGIMEN — NUNCA reportar como CEDIA-017:
-  comunicarse con, hablar con, relacionarse con, contar con, trabajar con,
-  reunirse con, encontrarse con, quedarse con, tratar con, cumplir con,
-  comprometerse con, contactar con, ponerse en contacto con.
-PROHIBIDO: reportar "se comunicó con", "habló con", "se reunió con" como inserción espuria.
-La preposición "con" en esos verbos es parte del régimen, no una inserción.
+CEDIA-017 — INSERCIÓN ESPURIA DE PREPOSICIÓN (solo casos contextuales)
+Preposición intrusa entre verbo transitivo y complemento directo, cuando el
+régimen del verbo NO la exige: "proceso de disciplinario" → "proceso disciplinario",
+"falta de profesional" → "falta profesional".
+VERBOS QUE RIGEN "con" POR SU PROPIO RÉGIMEN — NUNCA reportar:
+  comunicarse con, hablar con, contar con, reunirse con, cumplir con,
+  comprometerse con, contactar con.
+PROHIBIDO: reportar "se comunicó con", "habló con", "se reunió con" como inserción.
+El dequeísmo simple (consideró de que…) lo detecta otro módulo; no lo dupliques.
 
 CRITERIOS DE SEVERIDAD:
 - Alta: afecta validez jurídica o identifica incorrectamente al sujeto disciplinado
@@ -230,7 +231,7 @@ Responde con este JSON exacto (máximo 12 hallazgos):
   "resumen": "<párrafo conciso sobre el estado formal del documento>",
   "hallazgos": [
     {{
-      "modulo": "<M1|M2|M3|M4|M5|CEDIA-017|CEDIA-018>",
+      "modulo": "<M1|M2|M3|M4|M5|CEDIA-017>",
       "ubicacion": "<fragmento exacto del texto con el error, máx 80 caracteres>",
       "error": "<descripción concisa del error>",
       "justificacion": "<regla RAE o criterio CEDIA que lo sustenta>",
@@ -247,6 +248,9 @@ Responde con este JSON exacto (máximo 12 hallazgos):
 # ── Punto de entrada ──────────────────────────────────────────────────────────
 
 async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
+    # Detección determinista: instantánea, 0 tokens, siempre reproducible
+    det_hallazgos = analizar_deterministico(texto)
+
     # LT corre en paralelo mientras el LLM procesa los chunks secuencialmente
     lt_task = asyncio.create_task(_consultar_languagetool(texto))
 
@@ -257,6 +261,7 @@ async def ejecutar(texto: str, norma: str) -> ResultadoAgente:
         return construir_resultado_error("FORMA", exc)
 
     cedia_hallazgos = datos.get("hallazgos", [])
-    datos["hallazgos"] = _deduplicar(cedia_hallazgos, lt_hallazgos)
+    # Prioridad: determinista > LLM > LanguageTool
+    datos["hallazgos"] = _deduplicar(det_hallazgos, cedia_hallazgos, lt_hallazgos)
 
     return construir_resultado("FORMA", datos)
