@@ -105,6 +105,15 @@ Los adjuntos que no son PDF se enuncian en `adjuntos_no_analizados` sin
 someterlos a extracción, de modo que la capa de ingesta puede remitir cuanto
 venía en el correo sin provocar alertas de ilegibilidad espurias.
 
+### `POST /correo/cotejo` — verificación aislada
+
+Cotejo determinista sin modelo de lenguaje y sin contenido documental, para una
+capa de ingesta que lee el documento dentro de su propio entorno y solo necesita
+la parte que un modelo no resuelve con fiabilidad. Recibe cuatro datos
+—entidad interpelada, entidad que suscribe, radicado remitido y radicados
+hallados— y devuelve el cotejo, las alertas y un veredicto redactado para
+reproducirse sin reinterpretación.
+
 ### `GET /correo/diagnostico`
 
 Informa si el reconocimiento óptico está instalado. **Conviene consultarlo tras
@@ -196,6 +205,15 @@ ficha ya redactada y exige clave de acceso. El flujo son cinco acciones y no
 requiere escribir código; su configuración está en
 [ingesta-power-automate.md](ingesta-power-automate.md). La acción HTTP es de
 licencia premium, lo que debe verificarse antes de comprometerse con ella.
+
+**Ruta diseñada: agente de Copilot Studio.** Un agente que se dispara solo al
+llegar el correo, dentro del tenant, y que lee el documento sin que la
+correspondencia salga. Delega en `POST /correo/cotejo` la única pieza que un
+modelo de lenguaje no resuelve con fiabilidad —si dos denominaciones designan
+la misma entidad y si dos citas designan el mismo radicado—, de modo que solo
+salen del tenant denominaciones y radicados. El diseño, las instrucciones del
+agente y lo que esa elección cuesta están en
+[ingesta-copilot-studio.md](ingesta-copilot-studio.md).
 
 **Ruta posible, no implementada: worker propio sobre Microsoft Graph.** Más
 flexible y sin dependencia de licencias, pero exige que el área técnica

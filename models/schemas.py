@@ -254,6 +254,57 @@ class TriageResponse(BaseModel):
     )
 
 
+class CotejoRequest(BaseModel):
+    """
+    Datos mínimos para la verificación determinista, sin contenido documental.
+
+    Existe para las capas de ingesta que leen el documento por su cuenta dentro
+    de su propio entorno —un agente de Copilot Studio en el tenant— y solo
+    necesitan la parte que un modelo de lenguaje no resuelve con fiabilidad:
+    establecer si dos denominaciones designan la misma entidad y si dos citas
+    designan el mismo radicado.
+
+    No recibe el texto del correo ni de los adjuntos. Lo único que sale del
+    entorno de origen son denominaciones y radicados.
+    """
+
+    entidad_interpelada: str | None = Field(
+        None, description="Entidad a la que se dirigió la comunicación original"
+    )
+    entidad_remitente: str | None = Field(
+        None, description="Entidad que suscribe el documento recibido"
+    )
+    radicado_enviado: str | None = Field(
+        None, description="Radicado con que se remitió la comunicación original"
+    )
+    radicados_hallados: list[str] = Field(
+        default_factory=list, description="Radicados citados en el documento recibido"
+    )
+
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "entidad_interpelada": "Fiduprevisora S.A.",
+                "entidad_remitente": "La Previsora S.A. Compañía de Seguros",
+                "radicado_enviado": "CNDJ-2025-0412",
+                "radicados_hallados": ["CNDJ-2025-0412"],
+            }
+        }
+    }
+
+
+class CotejoResponse(BaseModel):
+    cotejo: ResultadoCotejo
+    alertas: list[Alerta] = Field(default_factory=list)
+    veredicto: str = Field(
+        ...,
+        description=(
+            "Síntesis en una o dos oraciones, redactada para que la capa de ingesta "
+            "la reproduzca sin reinterpretarla."
+        ),
+    )
+
+
 class DiagnosticoTriage(BaseModel):
     ocr_disponible: bool
     idioma_espanol_disponible: bool

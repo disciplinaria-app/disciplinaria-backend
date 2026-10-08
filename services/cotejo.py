@@ -272,3 +272,40 @@ def alertas_deterministas(
         )
 
     return alertas
+
+
+def redactar_veredicto(resultado: ResultadoCotejo, alertas: list[Alerta]) -> str:
+    """
+    Sintetiza el cotejo en una o dos oraciones.
+
+    Se redacta aquí, y no en la capa de ingesta, para que esta pueda
+    reproducirlo sin reinterpretarlo: el hallazgo que importa es precisamente
+    el que un modelo de lenguaje tiende a suavizar.
+    """
+    partes: list[str] = []
+
+    if resultado.entidad_estado == "DIFIERE":
+        partes.append(
+            "La entidad que suscribe el documento NO es aquella a la que se dirigió "
+            "la comunicación. Verifique si hubo confusión de destinatario."
+        )
+    elif resultado.entidad_estado == "COINCIDE":
+        partes.append("La entidad que suscribe corresponde a la interpelada.")
+    else:
+        partes.append(
+            "No fue posible cotejar la entidad: falta la denominación de una de las dos."
+        )
+
+    if resultado.radicado_estado == "NO_COINCIDE":
+        partes.append(
+            "El radicado remitido no figura entre los que cita el documento, "
+            "de modo que la respuesta podría corresponder a otra actuación."
+        )
+    elif resultado.radicado_estado == "COINCIDE":
+        partes.append("El radicado remitido sí figura citado en el documento.")
+    else:
+        partes.append("El cotejo de radicados quedó indeterminado.")
+
+    if not alertas:
+        partes.append("No se levantó alerta alguna.")
+    return " ".join(partes)
