@@ -215,6 +215,15 @@ salen del tenant denominaciones y radicados. El diseño, las instrucciones del
 agente y lo que esa elección cuesta están en
 [ingesta-copilot-studio.md](ingesta-copilot-studio.md).
 
+**Ruta sin costo adicional: agente en Agent Builder.** La pantalla «Cree su
+propio agente especialista» del chat de Copilot está incluida en la licencia de
+Microsoft 365 Copilot y admite el correo de Outlook como fuente. No se dispara
+solo ni puede invocar servicios externos, de modo que no hay cotejo
+determinista; la adaptación que esa limitación exige —prohibirle comparar y
+ordenarle exhibir ambas denominaciones— está en
+[copilot-agent-builder.md](copilot-agent-builder.md). Es la única vía
+disponible hoy sin gestión alguna.
+
 **Ruta posible, no implementada: worker propio sobre Microsoft Graph.** Más
 flexible y sin dependencia de licencias, pero exige que el área técnica
 registre una aplicación en el directorio o habilite IMAP con contraseña de

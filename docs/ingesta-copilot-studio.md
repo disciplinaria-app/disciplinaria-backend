@@ -42,24 +42,48 @@ y [Copilot Studio Plans and Pricing](https://www.microsoft.com/en-us/microsoft-3
   required to use agents.» La modalidad de pago por consumo exige además una
   suscripción de Azure vinculada al entorno.
 
-### Lo que no pudo confirmarse
+### Agent Builder, que sí está incluido
+
+Conviene no confundir dos productos. **Agent Builder** —la pantalla «Cree su
+propio agente especialista» del chat de Copilot— produce agentes declarativos y
+está incluido en la licencia: «Agents you build with the Agent Builder feature
+in Microsoft 365 Copilot are included in your Microsoft 365 Copilot license»,
+con funcionalidad que es «a subset of what Microsoft 365 Copilot supports».
+Admite el correo de Outlook como fuente de conocimiento.
+
+Pero **no admite acciones hacia servicios externos**: «Agent Builder doesn't
+support authoring actions that integrate external services. To add low-code
+actions, connectors, or workflows, copy the agent to Microsoft Copilot Studio.»
+De modo que un agente de Agent Builder no puede invocar `/correo/cotejo`, y
+tampoco se dispara solo.
+
+Esa vía, con la adaptación que su limitación exige, está documentada en
+[copilot-agent-builder.md](copilot-agent-builder.md). Es la única que no cuesta
+nada y está disponible hoy.
+
+### Lo que no pudo confirmarse en documentación formal
 
 **Si una ejecución disparada por evento queda cubierta por la licencia de
-Microsoft 365 Copilot.** Las páginas alcanzables no lo dicen. La tabla de
-tarifas por acción, que lo resolvería, está en `learn.microsoft.com`.
+Microsoft 365 Copilot.** Las páginas de producto alcanzables no lo dicen, y la
+tabla de tarifas por acción está en `learn.microsoft.com`, bloqueado.
 
-Hay una lectura razonable, y la enuncio como interpretación propia y no como
-afirmación de Microsoft: la licencia cubre el uso de agentes *publicados en*
-Microsoft 365 Copilot, esto es, consumidos por un usuario licenciado a través
-de esa superficie. Un agente que se dispara por la llegada de un correo no está
-siendo usado por nadie en esa superficie: corre por su cuenta. Esa lectura
-coincide con lo que sostienen varias guías de terceros —que las ejecuciones
-autónomas consumen créditos para cualquier licencia, del orden de 25 créditos
-por disparo más unos 5 por acción—, pero esas cifras no provienen de una página
-de Microsoft que haya podido leer.
+Lo que sí hay, concordante y de dos fuentes distintas: una respuesta de un
+moderador identificado como empleado de Microsoft en el foro de preguntas de
+Learn, según la cual las interacciones iniciadas por un usuario licenciado
+dentro de Microsoft 365 quedan incluidas, mientras que «autonomous or unattended
+executions, such as scheduled runs, Power Automate triggers, or background
+tasks, always consume credits regardless of licensing»; y el material de
+capacitación Agent Academy de Microsoft, que enuncia la misma regla práctica.
+Ninguna de las dos es documentación normativa.
 
-**Debe confirmarse con el área de tecnología o con el representante de
-licenciamiento antes de comprometerse.**
+Concuerda además con la redacción de la página de precios, que cubre los
+agentes *publicados en* Microsoft 365 Copilot, esto es, consumidos por un
+usuario licenciado a través de esa superficie. Un agente que se dispara por la
+llegada de un correo no está siendo usado por nadie allí: corre por su cuenta.
+
+**Puede darse por probable, pero debe confirmarse con el representante de
+licenciamiento antes de comprometer presupuesto.** La cifra de 25 créditos por
+disparo sigue proviniendo solo de guías de terceros.
 
 ### Qué costaría, con lo que sí está confirmado
 
