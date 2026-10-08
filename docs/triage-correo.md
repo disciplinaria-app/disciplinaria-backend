@@ -206,31 +206,13 @@ requiere escribir código; su configuración está en
 [ingesta-power-automate.md](ingesta-power-automate.md). La acción HTTP es de
 licencia premium, lo que debe verificarse antes de comprometerse con ella.
 
-**Ruta diseñada: agente de Copilot Studio.** Un agente que se dispara solo al
-llegar el correo, dentro del tenant, y que lee el documento sin que la
-correspondencia salga. Delega en `POST /correo/cotejo` la única pieza que un
-modelo de lenguaje no resuelve con fiabilidad —si dos denominaciones designan
-la misma entidad y si dos citas designan el mismo radicado—, de modo que solo
-salen del tenant denominaciones y radicados. El diseño, las instrucciones del
-agente y lo que esa elección cuesta están en
-[ingesta-copilot-studio.md](ingesta-copilot-studio.md).
-
-**Ruta sin costo adicional: agente en Agent Builder.** La pantalla «Cree su
-propio agente especialista» del chat de Copilot está incluida en la licencia de
-Microsoft 365 Copilot y admite el correo de Outlook como fuente. No se dispara
-solo ni puede invocar servicios externos, de modo que no hay cotejo
-determinista; la adaptación que esa limitación exige —prohibirle comparar y
-ordenarle exhibir ambas denominaciones— está en
-[copilot-agent-builder.md](copilot-agent-builder.md). Es la única vía
-disponible hoy sin gestión alguna.
-
 **Ruta posible, no implementada: worker propio sobre Microsoft Graph.** Más
 flexible y sin dependencia de licencias, pero exige que el área técnica
 registre una aplicación en el directorio o habilite IMAP con contraseña de
 aplicación.
 
-Las tres consumen el mismo núcleo. Los módulos de `services/` son comunes a
-todas: cambiar de ruta es sustituir la capa de ingesta, no rehacer el sistema.
+Todas consumen el mismo núcleo. Los módulos de `services/` son comunes a
+ellas: cambiar de ruta es sustituir la capa de ingesta, no rehacer el sistema.
 
 ## Pruebas
 

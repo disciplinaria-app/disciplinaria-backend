@@ -2,10 +2,9 @@
 Pruebas del cotejo aislado.
 
 Este endpoint existe para que una capa de ingesta que lee el documento dentro
-de su propio entorno —un agente de Copilot Studio en el tenant— conserve la
-verificación determinista sin remitir la correspondencia. Lo que se verifica
-aquí, además del resultado, es esa garantía: que no invoque al modelo y que no
-reciba contenido documental.
+de su propio entorno conserve la verificación determinista sin remitir la
+correspondencia. Lo que se verifica aquí, además del resultado, es esa
+garantía: que no invoque al modelo y que no reciba contenido documental.
 """
 
 import pytest

@@ -259,10 +259,9 @@ class CotejoRequest(BaseModel):
     Datos mínimos para la verificación determinista, sin contenido documental.
 
     Existe para las capas de ingesta que leen el documento por su cuenta dentro
-    de su propio entorno —un agente de Copilot Studio en el tenant— y solo
-    necesitan la parte que un modelo de lenguaje no resuelve con fiabilidad:
-    establecer si dos denominaciones designan la misma entidad y si dos citas
-    designan el mismo radicado.
+    de su propio entorno y solo necesitan la parte que un modelo de lenguaje no
+    resuelve con fiabilidad: establecer si dos denominaciones designan la misma
+    entidad y si dos citas designan el mismo radicado.
 
     No recibe el texto del correo ni de los adjuntos. Lo único que sale del
     entorno de origen son denominaciones y radicados.

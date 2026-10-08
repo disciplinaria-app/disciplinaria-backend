@@ -386,9 +386,8 @@ async def triage_correo_json(request: TriageRequest) -> TriageResponse:
     summary="Cotejar entidad y radicado, sin modelo de lenguaje y sin contenido documental",
     description=(
         "Verificación determinista aislada, para capas de ingesta que leen el documento "
-        "por su cuenta dentro de su propio entorno —un agente de Copilot Studio en el "
-        "tenant institucional— y solo necesitan la parte que un modelo de lenguaje no "
-        "resuelve con fiabilidad.\n\n"
+        "por su cuenta dentro de su propio entorno y solo necesitan la parte que un "
+        "modelo de lenguaje no resuelve con fiabilidad.\n\n"
         "No recibe el texto del correo ni de los adjuntos, y no invoca al modelo: lo único "
         "que sale del entorno de origen son denominaciones y radicados. La comparación de "
         "entidades opera sobre núcleos léxicos completos y nunca por subcadenas, que es lo "
