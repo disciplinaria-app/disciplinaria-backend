@@ -166,6 +166,23 @@ constancias entre los adjuntos leídos, y consignar expresamente cuándo un
 documento termina en fórmula de despedida sin firma visible, sin suponer quién
 lo suscribe ni dar por sentado que falta una página.
 
+## La fuente de correo no está disponible en este tenant
+
+Comprobado en la interfaz: «+ Agregar conocimiento» solo ofrece escribir un
+vínculo. No despliega la lista de tipos de fuente, de modo que «Mis correos
+electrónicos» no puede seleccionarse. Al pedirle al agente que revisara la
+correspondencia del día, respondió que no tiene acceso al buzón y solicitó que
+se le compartieran los correos —conducta correcta: declaró la carencia en lugar
+de fabricar fichas—.
+
+La causa más probable es de licencia: esa fuente exige el complemento de
+Microsoft 365 Copilot asignado al usuario. También puede deberse al despliegue
+progresivo de la función o a una directiva del tenant.
+
+Mientras no se resuelva, el agente opera con los documentos que se le adjunten
+en la conversación. Pierde el barrido del buzón, pero conserva lo que de él se
+quería: la lectura del documento y la CONFRONTACIÓN de las dos denominaciones.
+
 ## Cómo usarlo
 
 Invóquelo una vez al día: «Revisa la correspondencia recibida hoy y entrégame
