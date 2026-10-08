@@ -150,26 +150,37 @@ institucional:
    documento. Las advertencias existen para que el lector sepa cuándo la ficha
    se construyó sobre material incompleto, truncado o ilegible.
 
-## Lo que falta: la capa de ingesta
+## La capa de ingesta
 
-Este módulo recibe correos; no los busca. La ingesta desde Microsoft 365 admite
-dos rutas, y ambas consumen los mismos endpoints:
+Este módulo recibe correos; no los busca. Esa es tarea de la capa de ingesta,
+que se conecta al buzón y alimenta los endpoints de arriba.
 
-**Power Automate, dentro del tenant institucional.** No expone credenciales
-hacia afuera, lo que la hace la más defendible institucionalmente. El flujo
-consta de: disparador «Cuando llegue un correo electrónico nuevo (V3)» con
-filtro de remitentes o carpeta; acción «Obtener datos adjuntos»; acción HTTP
-`POST` a `/correo/triage/json` con los adjuntos en base64; y una acción de
-correo que remita la ficha. La acción HTTP es de licencia premium, lo que debe
-verificarse antes de comprometerse con esta ruta.
+**Ruta implementada: reenvío a un buzón propio** (`ingesta/`). Una regla del
+correo institucional reenvía la correspondencia a un buzón propio del sistema,
+y un worker lo sondea, clasifica y remite la ficha. No exige intervención del
+área técnica ni credenciales del buzón institucional. Su configuración, sus
+garantías y sus límites están en [ingesta-reenvio.md](ingesta-reenvio.md).
 
-**Worker propio sobre Microsoft Graph o IMAP.** Más flexible y sin dependencia
-de licencias, pero exige que el área técnica registre una aplicación en el
-directorio o habilite IMAP con contraseña de aplicación.
+```bash
+python -m ingesta.worker --una-vez   # un ciclo y termina
+python -m ingesta.worker             # sondeo permanente
+```
 
-Como alternativa sin intervención del área técnica, una regla de Outlook puede
-reenviar la correspondencia a un buzón propio del sistema, leído por un worker
-mediante IMAP. El núcleo es idéntico en las tres rutas.
+**Rutas posibles, no implementadas:**
+
+- *Power Automate dentro del tenant institucional.* No expone credenciales ni
+  envía correo fuera del tenant, lo que la hace la más defendible
+  institucionalmente. El flujo consta de: disparador «Cuando llegue un correo
+  electrónico nuevo (V3)» con filtro de remitentes o carpeta; acción «Obtener
+  datos adjuntos»; acción HTTP `POST` a `/correo/triage/json` con los adjuntos
+  en base64; y una acción de correo que remita la ficha. La acción HTTP es de
+  licencia premium, lo que debe verificarse antes de comprometerse con ella.
+- *Worker propio sobre Microsoft Graph.* Más flexible y sin dependencia de
+  licencias, pero exige que el área técnica registre una aplicación en el
+  directorio o habilite IMAP con contraseña de aplicación.
+
+Las tres consumen el mismo núcleo. Los módulos de `services/` son comunes a
+todas: cambiar de ruta es sustituir la capa de ingesta, no rehacer el sistema.
 
 ## Pruebas
 

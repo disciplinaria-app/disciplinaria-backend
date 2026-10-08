@@ -100,3 +100,87 @@ def inferir_entidad_interpelada(cadena_anterior: str) -> str | None:
             if valor and "@" not in valor and len(valor) > 3:
                 return valor[:200]
     return None
+
+
+# Marcas con que un cliente abre el bloque de un mensaje reenviado.
+_APERTURA_REENVIO = re.compile(
+    r"^\s*(?:-{2,}\s*(?:mensaje\s+(?:original|reenviado)|original\s+message|forwarded\s+message)\s*-{2,}"
+    r"|_{10,})\s*$",
+    re.IGNORECASE,
+)
+_ENCABEZADO_REMITENTE = re.compile(r"^\s*(?:De|From)\s*:\s*(.+)$", re.IGNORECASE)
+_ENCABEZADO_ASUNTO = re.compile(r"^\s*(?:Asunto|Subject)\s*:\s*(.+)$", re.IGNORECASE)
+_ENCABEZADO_CUALQUIERA = re.compile(
+    r"^\s*(?:De|From|Para|To|CC|CCO|BCC|Enviado|Sent|Asunto|Subject|Fecha|Date|Importancia)\s*:",
+    re.IGNORECASE,
+)
+_PREFIJOS_REENVIO = re.compile(r"^\s*(?:RV|RE?V|FW|FWD|Fwd)\s*:", re.IGNORECASE)
+
+# Dentro de este número de líneas tras el «De:» debe aparecer el «Asunto:»
+# para considerar que se trata de un bloque de encabezados y no de prosa.
+_VENTANA_ENCABEZADOS = 12
+
+
+def parece_reenvio(asunto: str | None) -> bool:
+    """Reconoce el prefijo que los clientes antepuesen al reenviar."""
+    return bool(_PREFIJOS_REENVIO.match(asunto or ""))
+
+
+def desenvolver_reenvio(cuerpo: str) -> tuple[str | None, str | None, str]:
+    """
+    Desenvuelve un mensaje reenviado en línea.
+
+    Devuelve (remitente_original, asunto_original, cuerpo_original). El cuerpo
+    original es cuanto sigue al bloque de encabezados reenviados.
+
+    Esta operación es indispensable en la ruta de reenvío: al reenviar, el
+    remitente del sobre pasa a ser el propio usuario y el remitente real queda
+    sepultado en el bloque interno. Sin desenvolverlo, el cotejo compararía la
+    entidad interpelada contra el propio despacho y jamás advertiría la
+    discrepancia que motiva todo el módulo.
+
+    Si no se identifica un bloque de encabezados, devuelve (None, None, cuerpo)
+    para que el llamador conserve los datos del sobre.
+    """
+    if not cuerpo:
+        return None, None, ""
+
+    texto = despojar_html(cuerpo) if parece_html(cuerpo) else cuerpo
+    lineas = texto.splitlines()
+
+    for indice, linea in enumerate(lineas):
+        coincidencia = _ENCABEZADO_REMITENTE.match(linea)
+        if not coincidencia:
+            continue
+
+        # El «De:» debe pertenecer a un bloque de encabezados, no a la prosa.
+        ventana = lineas[indice + 1 : indice + 1 + _VENTANA_ENCABEZADOS]
+        asunto = None
+        fin_bloque = indice + 1
+        for desplazamiento, siguiente in enumerate(ventana):
+            if _ENCABEZADO_ASUNTO.match(siguiente):
+                asunto = _ENCABEZADO_ASUNTO.match(siguiente).group(1).strip()
+                fin_bloque = indice + 1 + desplazamiento + 1
+                break
+            if not _ENCABEZADO_CUALQUIERA.match(siguiente) and siguiente.strip():
+                # Línea de prosa antes del asunto: no era un bloque de encabezados.
+                break
+        if asunto is None:
+            continue
+
+        remitente = coincidencia.group(1).strip()
+        cuerpo_original = "\n".join(lineas[fin_bloque:]).strip()
+        return remitente or None, asunto or None, cuerpo_original
+
+    return None, None, texto
+
+
+def extraer_direccion(remitente: str | None) -> str:
+    """Aísla la dirección de un remitente con la forma «Nombre <buzón@dominio>»."""
+    if not remitente:
+        return ""
+    coincidencia = re.search(r"<([^<>]+@[^<>]+)>", remitente)
+    if coincidencia:
+        return coincidencia.group(1).strip().lower()
+    coincidencia = re.search(r"[\w.+-]+@[\w.-]+\.\w+", remitente)
+    return coincidencia.group(0).strip().lower() if coincidencia else ""
