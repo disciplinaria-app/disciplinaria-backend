@@ -7,22 +7,82 @@ licenciamiento más incierto.
 Este documento reúne lo que pude verificar, lo que no, el diseño que propongo y
 lo que esa elección cuesta.
 
-## Advertencia sobre las fuentes
+## Estado de la verificación
 
-**La política de red de este contenedor bloquea `learn.microsoft.com`,
-`adoption.microsoft.com` y `microsoft.github.io`**, de modo que no pude leer la
-documentación primaria de Microsoft. Lo que sigue se apoya en resultados de
-búsqueda —que sí citan textualmente páginas de Microsoft Learn— y en guías de
-terceros que en varios puntos se contradicen entre sí.
+La política de red de este entorno permite `www.microsoft.com` pero **bloquea
+`learn.microsoft.com`, `azure.microsoft.com`, `adoption.microsoft.com`,
+`techcommunity.microsoft.com` y `microsoft.github.io`**. Con lo alcanzable se
+pudo confirmar la estructura de precios y el alcance de la licencia en las
+propias páginas de Microsoft; **la tabla de tarifas por acción reside en
+`learn.microsoft.com` y no pudo consultarse**.
 
-Cada afirmación de abajo indica su grado de respaldo. Las que tocan
-licenciamiento y costo deben confirmarse con el área de tecnología o con el
-representante de licenciamiento antes de comprometerse.
+Cada afirmación de abajo indica su respaldo. Habilitar `learn.microsoft.com` y
+`azure.microsoft.com` en la configuración de red del entorno permitiría cerrar
+el punto que queda abierto.
 
-Si quiere que verifique contra las páginas de Microsoft, puede habilitar esos
-dominios en la configuración de red del entorno.
+### Confirmado en páginas de Microsoft
 
-## Lo que sí está confirmado
+De [Microsoft Copilot Studio](https://www.microsoft.com/en-us/microsoft-365-copilot/microsoft-copilot-studio)
+y [Copilot Studio Plans and Pricing](https://www.microsoft.com/en-us/microsoft-365-copilot/pricing/copilot-studio):
+
+- **Precio de la capacidad.** «Copilot Studio is sold as tenant-wide Copilot
+  Credit packs of 25,000 Copilot Credits each, priced at $200.00/pack/month.»
+  Esto fija el crédito en **0,008 dólares**. Existe también una modalidad de
+  pago por consumo, sin diferencia funcional: «There are no in-product features
+  or capability differences between the Copilot Credit pack and the
+  pay-as-you-go meter.»
+- **Qué consume créditos.** «Whenever an action or response is completed by an
+  agent, a varying number of Copilot Credits will be billed.» Es decir, cada
+  acción o respuesta que el agente complete, en cantidad variable.
+- **Qué cubre la licencia que usted tiene.** «For those licensed for Microsoft
+  365 Copilot, usage of agents **published to Microsoft 365 Copilot** is
+  included in their license.» La licencia da acceso a construir y usar agentes
+  internos «within Microsoft 365 using the Copilot Chat and Standard harness».
+- **Requisito que no figuraba en el diseño inicial:** «An Azure subscription is
+  required to use agents.» La modalidad de pago por consumo exige además una
+  suscripción de Azure vinculada al entorno.
+
+### Lo que no pudo confirmarse
+
+**Si una ejecución disparada por evento queda cubierta por la licencia de
+Microsoft 365 Copilot.** Las páginas alcanzables no lo dicen. La tabla de
+tarifas por acción, que lo resolvería, está en `learn.microsoft.com`.
+
+Hay una lectura razonable, y la enuncio como interpretación propia y no como
+afirmación de Microsoft: la licencia cubre el uso de agentes *publicados en*
+Microsoft 365 Copilot, esto es, consumidos por un usuario licenciado a través
+de esa superficie. Un agente que se dispara por la llegada de un correo no está
+siendo usado por nadie en esa superficie: corre por su cuenta. Esa lectura
+coincide con lo que sostienen varias guías de terceros —que las ejecuciones
+autónomas consumen créditos para cualquier licencia, del orden de 25 créditos
+por disparo más unos 5 por acción—, pero esas cifras no provienen de una página
+de Microsoft que haya podido leer.
+
+**Debe confirmarse con el área de tecnología o con el representante de
+licenciamiento antes de comprometerse.**
+
+### Qué costaría, con lo que sí está confirmado
+
+El precio del crédito está confirmado en 0,008 dólares; lo que falta es cuántos
+créditos consume una ejecución. Con las cifras de terceros —45 créditos por
+correo— el costo rondaría los **0,36 dólares por correo**, esto es, unos
+**150 dólares mensuales** para veinte correos diarios en días hábiles.
+
+Si la lectura de arriba fuese equivocada y las ejecuciones disparadas quedaran
+cubiertas por la licencia, el costo tendería a cero. La diferencia entre ambos
+escenarios es lo que hace indispensable la confirmación.
+
+### Dos obstáculos institucionales
+
+**La suscripción de Azure.** Está confirmado que se requiere para usar agentes.
+Para la Rama Judicial no es activar una casilla: es una gestión de contratación
+ante el área competente. Conviene medirla antes de avanzar en el diseño.
+
+**La capacidad es de tenant, no de usuario.** Los paquetes de créditos se
+compran a nivel de tenant, de modo que esto no se resuelve con su licencia
+individual: requiere una decisión de quien administra el tenant institucional.
+
+## Lo que sí está confirmado del patrón técnico
 
 **El patrón existe y Microsoft lo documenta.** Un agente de Copilot Studio
 admite un disparador «Cuando llegue un correo electrónico nuevo (V3)» del
@@ -41,44 +101,11 @@ mismo cuidado que el backend aplica y confirma que el problema es real.
 señala además que el idioma del agente debía estar en inglés para habilitar
 esa funcionalidad. Si esa restricción sigue vigente, conviene comprobar que un
 agente en inglés admita instrucciones y produzca respuestas en español, que es
-lo que usted necesita. Es la primera prueba que haría.
+lo que usted necesita.
 
 **El estado del disparador por evento.** Las fuentes discrepan: alguna lo
 describe como característica en versión preliminar y otra lo da por disponible
 de modo general. Verifíquelo en su tenant.
-
-## El dato que cambia la decisión
-
-**Las ejecuciones autónomas se facturan en créditos de Copilot aunque el
-usuario tenga licencia de Microsoft 365 Copilot.**
-
-La licencia que usted tiene cubre el uso *interactivo* de agentes —preguntarle
-algo a Copilot, como en la pantalla que me mostró—. Un agente que se dispara
-solo, sin que nadie escriba, es una ejecución autónoma, y las guías coinciden
-en que esa modalidad consume créditos de pago para cualquier licencia.
-
-Las cifras provienen de guías de terceros, no de una página de Microsoft que
-yo haya podido leer, y difieren entre sí:
-
-| Concepto | Cifra citada |
-|---|---|
-| Disparador autónomo | ~25 créditos por ejecución |
-| Acción del agente (llamada a conector) | ~5 créditos |
-| Paquete prepagado | ~200 USD por 25.000 créditos mensuales |
-| Pago por consumo | ~0,01 USD por crédito |
-
-Una ejecución con cuatro acciones rondaría los 45 créditos, esto es, del orden
-de **0,35 a 0,45 dólares por correo**. Veinte correos diarios en días hábiles
-se acercarían a **160–200 dólares mensuales**.
-
-No comparo esa cifra con el costo actual del backend porque no he verificado
-las tarifas vigentes del modelo que usa; usted puede leer el gasto real en su
-panel de OpenRouter y contrastarlo. Lo que sí puedo afirmar es que la
-diferencia no es marginal, y que Microsoft publica un «Agent Usage Estimator»
-para estimar lo propio antes de comprometerse.
-
-**Esta es la comprobación que haría antes que ninguna otra**, porque si el costo
-no resulta aceptable, el resto del diseño es ocioso.
 
 ## La tensión de fondo
 
@@ -200,9 +227,9 @@ problema que usted tiene, por bien configurado que esté. El backend aplica
 reconocimiento óptico precisamente por eso. No encontré fuente que lo confirme
 ni lo descarte, así que hay que probarlo.
 
-**2. ¿Cuánto cuesta una ejecución?** Deje el agente corriendo un día con un
-volumen real y lea el consumo de créditos. Las cifras de arriba son
-estimaciones de terceros.
+**2. ¿Cuánto consume una ejecución?** Es lo único que falta para cerrar el
+cálculo: el precio del crédito está confirmado, no así cuántos créditos gasta
+un disparo. Deje el agente corriendo un día con volumen real y lea el consumo.
 
 ## Límites de esta ruta
 
@@ -228,8 +255,8 @@ estimaciones de terceros.
 | Cómputo de términos en código | No | Sí | Sí |
 | Traza de la extracción | No | Sí | Sí |
 | Lee PDF escaneados | Por verificar | Sí, con OCR | Sí, con OCR |
-| Licencia adicional | Créditos de Copilot | HTTP premium | Ninguna |
-| Costo por correo | ~0,35–0,45 USD (estimado) | Consumo del modelo | Consumo del modelo |
+| Licencia adicional | Créditos de Copilot y suscripción de Azure | HTTP premium | Ninguna |
+| Costo por correo | ~0,36 USD (crédito confirmado, consumo estimado) | Consumo del modelo | Consumo del modelo |
 | Estado | Diseñada; endpoint listo | Documentada; endpoint listo | Implementada y probada |
 
 Ninguna domina a las demás. Si el tratamiento de la información pesa más que
