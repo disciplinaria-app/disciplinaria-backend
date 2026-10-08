@@ -233,15 +233,22 @@ def _urgencia_final(propuesta, alertas: list[Alerta]) -> str:
 
 def _documentos_desde_ingesta(
     adjuntos: list[AdjuntoEntrada], permitir_ocr: bool
-) -> list[DocumentoProcesado]:
+) -> tuple[list[DocumentoProcesado], list[str]]:
     """
     Procesa los adjuntos remitidos por la capa de ingesta.
 
     Los que llegan en base64 se extraen aquí, con el mismo reconocimiento
     óptico que la vía multiparte; los que llegan ya convertidos a texto se
     envuelven sin reprocesarlos.
+
+    Devuelve (documentos, nombres de los adjuntos que no son PDF). Estos
+    últimos no se someten a extracción ni generan alerta de ilegibilidad: la
+    capa de ingesta puede remitir cuanto venía en el correo —incluido el
+    logotipo de la firma—, y una alerta por cada logotipo es la forma más
+    rápida de que el lector deje de atender las alertas.
     """
     documentos: list[DocumentoProcesado] = []
+    no_analizados: list[str] = []
     for adjunto in adjuntos:
         if adjunto.contenido_base64:
             try:
@@ -256,6 +263,9 @@ def _documentos_desde_ingesta(
                         advertencias=[f"El adjunto no venía en base64 válido: {exc}"],
                     )
                 )
+                continue
+            if not extraccion_pdf.es_pdf(adjunto.nombre, contenido=contenido):
+                no_analizados.append(adjunto.nombre)
                 continue
             documentos.append(
                 extraccion_pdf.extraer(contenido, adjunto.nombre, permitir_ocr=permitir_ocr)
@@ -278,7 +288,7 @@ def _documentos_desde_ingesta(
                 ),
             )
         )
-    return documentos
+    return documentos, no_analizados
 
 
 async def procesar(
@@ -290,6 +300,7 @@ async def procesar(
     archivos: list[tuple[str, bytes]] | None = None,
     adjuntos: list[AdjuntoEntrada] | None = None,
     permitir_ocr: bool = True,
+    adjuntos_no_analizados: list[str] | None = None,
 ) -> TriageResponse:
     """Ejecuta el triage completo y devuelve la ficha de la comunicación."""
     advertencias: list[str] = []
@@ -311,7 +322,9 @@ async def procesar(
         extraccion_pdf.extraer(contenido, nombre, permitir_ocr=permitir_ocr)
         for nombre, contenido in (archivos or [])
     ]
-    documentos.extend(_documentos_desde_ingesta(adjuntos or [], permitir_ocr))
+    desde_ingesta, no_analizados = _documentos_desde_ingesta(adjuntos or [], permitir_ocr)
+    documentos.extend(desde_ingesta)
+    no_analizados = list(adjuntos_no_analizados or []) + no_analizados
 
     ilegibles = [d.nombre for d in documentos if d.metodo == "NINGUNO"]
     legibles = [(d.nombre, d.texto) for d in documentos if d.texto]
@@ -420,6 +433,7 @@ async def procesar(
         alertas=alertas,
         urgencia=_urgencia_final(datos.get("urgencia"), alertas),
         documentos=documentos,
+        adjuntos_no_analizados=no_analizados,
         cotejo=resultado_cotejo,
         advertencias=advertencias,
     )

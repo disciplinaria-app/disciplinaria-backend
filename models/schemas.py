@@ -109,13 +109,71 @@ class AdjuntoEntrada(BaseModel):
         return self
 
 
+class FichaRedactada(BaseModel):
+    """
+    Ficha ya redactada, lista para remitirse por correo.
+
+    Existe para que una capa de ingesta sin código —un flujo de Power
+    Automate— no deba componer el mensaje con expresiones ni recorrer la lista
+    de alertas: toma estos tres campos y los entrega a su acción de correo.
+    """
+
+    asunto: str = Field(..., description="Asunto que permite decidir sin abrir el mensaje")
+    texto: str = Field(..., description="Cuerpo en texto plano")
+    html: str = Field(..., description="Cuerpo en HTML, con el contenido recibido escapado")
+
+
 class TriageRequest(BaseModel):
     remitente: str = Field(..., description="Dirección o nombre del remitente del correo")
     asunto: str = Field("", description="Asunto del correo, que con frecuencia no refleja la materia real")
-    cuerpo: str = Field("", description="Cuerpo del correo; puede venir en HTML o con la cadena de respuestas anidada")
+    cuerpo: str = Field(
+        "",
+        description="Cuerpo del correo; puede venir en HTML o con la cadena de respuestas anidada",
+    )
+    cuerpo_base64: str | None = Field(
+        None,
+        description=(
+            "Cuerpo del correo codificado en base64, alternativa a «cuerpo». Existe para las "
+            "capas de ingesta que insertan el valor en una plantilla JSON: el cuerpo de un "
+            "correo de Outlook es HTML y contiene comillas y saltos de línea que romperían "
+            "esa plantilla. El base64 elimina el riesgo. Si se remiten ambos, prevalece «cuerpo»."
+        ),
+    )
     fecha_recepcion: str | None = Field(None, description="Fecha de recepción en formato AAAA-MM-DD")
     contexto: ContextoEnvio | None = None
     adjuntos: list[AdjuntoEntrada] = Field(default_factory=list)
+    aplicar_ocr: bool = Field(
+        True,
+        description=(
+            "Aplicar reconocimiento óptico a los PDF escaneados. Desactivarlo acelera "
+            "la respuesta cuando la capa de ingesta tiene un límite de espera estrecho, "
+            "a costa de no leer los documentos digitalizados."
+        ),
+    )
+    redactar: bool = Field(
+        True, description="Incluir en la respuesta la ficha ya redactada para remitirla por correo"
+    )
+
+    @model_validator(mode="after")
+    def _resolver_cuerpo(self) -> "TriageRequest":
+        """
+        Decodifica «cuerpo_base64» cuando no se remitió «cuerpo».
+
+        Un base64 mal formado se rechaza en lugar de tolerarse: proviene de una
+        plantilla de la capa de ingesta, y conviene que su autor lo advierta al
+        primer intento antes que recibir fichas construidas sobre un cuerpo vacío.
+        """
+        if self.cuerpo or not self.cuerpo_base64:
+            return self
+        import base64 as _base64
+
+        try:
+            compactado = "".join(self.cuerpo_base64.split())
+            crudo = _base64.b64decode(compactado, validate=True)
+        except Exception as exc:
+            raise ValueError(f"«cuerpo_base64» no es base64 válido: {exc}") from exc
+        self.cuerpo = crudo.decode("utf-8", errors="replace")
+        return self
 
     model_config = {
         "json_schema_extra": {
@@ -178,7 +236,18 @@ class TriageResponse(BaseModel):
     alertas: list[Alerta] = Field(default_factory=list)
     urgencia: Severidad = "BAJA"
     documentos: list[DocumentoProcesado] = Field(default_factory=list)
+    adjuntos_no_analizados: list[str] = Field(
+        default_factory=list,
+        description=(
+            "Adjuntos recibidos que no son PDF y por tanto no se sometieron a extracción. "
+            "Se enuncian para que el lector sepa que existen, sin generar por ello una "
+            "alerta de documento ilegible."
+        ),
+    )
     cotejo: ResultadoCotejo = Field(default_factory=ResultadoCotejo)
+    redaccion: FichaRedactada | None = Field(
+        None, description="Ficha redactada, si la solicitud la pidió"
+    )
     advertencias: list[str] = Field(
         default_factory=list,
         description="Limitaciones del procesamiento que el lector debe conocer antes de confiar en la ficha",

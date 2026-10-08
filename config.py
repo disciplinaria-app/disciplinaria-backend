@@ -51,6 +51,23 @@ def _direcciones(nombre: str) -> frozenset[str]:
     return frozenset(d.strip().lower() for d in crudo.split(",") if d.strip())
 
 
+# Claves que autorizan el uso de los endpoints de triage. Se admiten varias,
+# separadas por comas, para poder rotarlas sin interrumpir el servicio. Si no
+# hay ninguna configurada, los endpoints rechazan toda solicitud: una API que
+# consume el modelo y lee correspondencia no puede quedar abierta.
+TRIAGE_API_KEYS = frozenset(
+    clave.strip() for clave in (os.getenv("TRIAGE_API_KEYS", "") or "").split(",") if clave.strip()
+)
+
+# Límites del reconocimiento óptico. Importan en la ruta de Power Automate: su
+# acción HTTP agota la espera a los 120 segundos, y el reconocimiento de muchas
+# páginas a alta resolución puede excederlos.
+MAX_PAGINAS_OCR = _entero("MAX_PAGINAS_OCR", 20)
+DPI_OCR = _entero("DPI_OCR", 300)
+
+
+# --- Ingesta por reenvío a un buzón propio ---------------------------------
+
 # Buzones del propio usuario. Un correo que provenga de alguno de ellos se
 # presume reenviado, y el worker intenta recuperar el remitente original.
 DIRECCIONES_PROPIAS = _direcciones("DIRECCIONES_PROPIAS")

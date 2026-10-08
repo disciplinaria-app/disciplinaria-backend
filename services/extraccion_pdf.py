@@ -19,15 +19,33 @@ from functools import lru_cache
 
 from pypdf import PdfReader
 
+import config
 from models.schemas import DocumentoProcesado
 
 # Debajo de este número de caracteres útiles se presume página escaneada.
 UMBRAL_CARACTERES_POR_PAGINA = 120
 MAX_PAGINAS = 80
-MAX_PAGINAS_OCR = 20
-DPI_OCR = 300
+MAX_PAGINAS_OCR = config.MAX_PAGINAS_OCR
+DPI_OCR = config.DPI_OCR
 MAX_BYTES_ADJUNTO = 25 * 1024 * 1024
 IDIOMA_OCR = "spa"
+
+EXTENSIONES_PDF = (".pdf",)
+MAGIA_PDF = b"%PDF"
+
+
+def es_pdf(nombre: str, tipo: str = "", contenido: bytes = b"") -> bool:
+    """
+    Reconoce un PDF por su tipo declarado, su extensión o su firma binaria.
+
+    Las entidades remiten con frecuencia el adjunto como
+    «application/octet-stream», de modo que el tipo declarado no basta.
+    """
+    if tipo == "application/pdf":
+        return True
+    if (nombre or "").lower().endswith(EXTENSIONES_PDF):
+        return True
+    return contenido[:4] == MAGIA_PDF
 
 
 @lru_cache(maxsize=1)

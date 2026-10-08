@@ -23,9 +23,7 @@ from email.message import EmailMessage
 from email.utils import parsedate_to_datetime
 
 from services import correo as servicio_correo
-
-EXTENSIONES_PDF = (".pdf",)
-MAGIA_PDF = b"%PDF"
+from services.extraccion_pdf import es_pdf
 
 # Cabecera con que el sistema marca las fichas que él mismo remite. Si el buzón
 # de fichas coincide con el de ingesta —que es la configuración por omisión—,
@@ -80,20 +78,6 @@ class CorreoEntrante:
     entidad_declarada: str | None = None
     radicado_declarado: str | None = None
     asunto_declarado: str | None = None
-
-
-def _es_pdf(nombre: str, tipo: str, contenido: bytes) -> bool:
-    """
-    Reconoce un PDF por su tipo declarado, su extensión o su firma binaria.
-
-    Las entidades remiten con frecuencia el adjunto como
-    «application/octet-stream», de modo que el tipo declarado no basta.
-    """
-    if tipo == "application/pdf":
-        return True
-    if nombre.lower().endswith(EXTENSIONES_PDF):
-        return True
-    return contenido[:4] == MAGIA_PDF
 
 
 def _texto_del_cuerpo(mensaje: EmailMessage) -> str:
@@ -177,7 +161,7 @@ def _recoger_adjuntos(
             continue
 
         nombre = nombre or "adjunto"
-        if _es_pdf(nombre, parte.get_content_type(), contenido):
+        if es_pdf(nombre, parte.get_content_type(), contenido):
             pdf.append((nombre, contenido))
         else:
             otros.append(nombre)

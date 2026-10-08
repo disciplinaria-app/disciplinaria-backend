@@ -71,6 +71,7 @@ async def clasificar(entrante: CorreoEntrante) -> TriageResponse:
         fecha_recepcion=entrante.fecha,
         contexto=construir_contexto(entrante),
         archivos=entrante.adjuntos_pdf,
+        adjuntos_no_analizados=entrante.otros_adjuntos,
     )
 
 

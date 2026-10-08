@@ -24,6 +24,7 @@ El diseño separa deliberadamente las dos operaciones:
 | Cómputo de días del término | `services/triage.py` | Un término mal contado no es tolerable |
 | Identificación de quién suscribe | `agents/agente_triage.py` | Exige lectura del documento |
 | Materia sustancial y tipo de acto | `agents/agente_triage.py` | Exige lectura del documento |
+| Redacción de la ficha para su lectura | `services/presentacion.py` | Común a las tres rutas |
 
 El agente nunca cuenta días: solo señala la fecha límite que el documento
 expresa, y los días los calcula el código. Si devuelve una fecha en formato no
@@ -69,6 +70,19 @@ Límites vigentes: 80 páginas por documento, 20 páginas por reconocimiento
 
 ## Endpoints
 
+### Acceso
+
+Los dos endpoints de clasificación exigen una clave compartida en la cabecera
+`X-API-Key`, o bien como `Authorization: Bearer <clave>`. Las claves válidas se
+declaran en `TRIAGE_API_KEYS`, separadas por comas para poder rotarlas sin
+interrumpir el servicio. **Si no hay ninguna configurada, los endpoints
+rechazan toda solicitud**: fallar cerrado es preferible a dejar abierto un
+endpoint que consume el modelo y recibe correspondencia.
+
+`GET /correo/diagnostico` no exige clave, para que el despliegue pueda
+verificarse antes de configurarla, y no revela dato alguno de la
+correspondencia.
+
 ### `POST /correo/triage` — multiparte
 
 Para una capa de ingesta que puede remitir archivos: los PDF viajan como
@@ -83,7 +97,13 @@ Campos: `remitente` (obligatorio), `asunto`, `cuerpo`, `fecha_recepcion`,
 Para una capa de ingesta que no puede construir una solicitud multiparte, como
 un flujo de Power Automate. Cada adjunto viaja en `contenido_base64` —y el
 servidor lo extrae, con reconocimiento óptico si viene escaneado— o bien ya
-convertido a `texto`.
+convertido a `texto`. El cuerpo del correo admite `cuerpo_base64` como
+alternativa a `cuerpo`, porque el HTML de Outlook contiene comillas y saltos de
+línea que pueden romper una plantilla JSON.
+
+Los adjuntos que no son PDF se enuncian en `adjuntos_no_analizados` sin
+someterlos a extracción, de modo que la capa de ingesta puede remitir cuanto
+venía en el correo sin provocar alertas de ilegibilidad espurias.
 
 ### `GET /correo/diagnostico`
 
@@ -107,7 +127,9 @@ termino               fecha límite y días restantes calculados
 alertas               catálogo cerrado, con severidad y origen
 urgencia              ALTA | MEDIA | BAJA
 documentos            trazabilidad de la extracción de cada adjunto
+adjuntos_no_analizados  adjuntos que no son PDF, enunciados sin extracción
 cotejo                resultado de la verificación determinista
+redaccion             asunto, texto y HTML ya compuestos para remitir
 advertencias          limitaciones del procesamiento
 ```
 
@@ -166,18 +188,19 @@ python -m ingesta.worker --una-vez   # un ciclo y termina
 python -m ingesta.worker             # sondeo permanente
 ```
 
-**Rutas posibles, no implementadas:**
+**Ruta preparada: Power Automate dentro del tenant institucional.** No envía
+correspondencia a un buzón externo ni expone credenciales, lo que la hace la
+más defendible institucionalmente. El endpoint `/correo/triage/json` está
+dispuesto para ella: acepta los adjuntos y el cuerpo en base64, devuelve la
+ficha ya redactada y exige clave de acceso. El flujo son cinco acciones y no
+requiere escribir código; su configuración está en
+[ingesta-power-automate.md](ingesta-power-automate.md). La acción HTTP es de
+licencia premium, lo que debe verificarse antes de comprometerse con ella.
 
-- *Power Automate dentro del tenant institucional.* No expone credenciales ni
-  envía correo fuera del tenant, lo que la hace la más defendible
-  institucionalmente. El flujo consta de: disparador «Cuando llegue un correo
-  electrónico nuevo (V3)» con filtro de remitentes o carpeta; acción «Obtener
-  datos adjuntos»; acción HTTP `POST` a `/correo/triage/json` con los adjuntos
-  en base64; y una acción de correo que remita la ficha. La acción HTTP es de
-  licencia premium, lo que debe verificarse antes de comprometerse con ella.
-- *Worker propio sobre Microsoft Graph.* Más flexible y sin dependencia de
-  licencias, pero exige que el área técnica registre una aplicación en el
-  directorio o habilite IMAP con contraseña de aplicación.
+**Ruta posible, no implementada: worker propio sobre Microsoft Graph.** Más
+flexible y sin dependencia de licencias, pero exige que el área técnica
+registre una aplicación en el directorio o habilite IMAP con contraseña de
+aplicación.
 
 Las tres consumen el mismo núcleo. Los módulos de `services/` son comunes a
 todas: cambiar de ruta es sustituir la capa de ingesta, no rehacer el sistema.
