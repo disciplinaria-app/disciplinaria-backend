@@ -105,15 +105,6 @@ Los adjuntos que no son PDF se enuncian en `adjuntos_no_analizados` sin
 someterlos a extracción, de modo que la capa de ingesta puede remitir cuanto
 venía en el correo sin provocar alertas de ilegibilidad espurias.
 
-### `POST /correo/cotejo` — verificación aislada
-
-Cotejo determinista sin modelo de lenguaje y sin contenido documental, para una
-capa de ingesta que lee el documento dentro de su propio entorno y solo necesita
-la parte que un modelo no resuelve con fiabilidad. Recibe cuatro datos
-—entidad interpelada, entidad que suscribe, radicado remitido y radicados
-hallados— y devuelve el cotejo, las alertas y un veredicto redactado para
-reproducirse sin reinterpretación.
-
 ### `GET /correo/diagnostico`
 
 Informa si el reconocimiento óptico está instalado. **Conviene consultarlo tras

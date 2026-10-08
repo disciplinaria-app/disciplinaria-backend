@@ -13,8 +13,6 @@ from models.schemas import (
     AnalisisRequest,
     AnalisisResponse,
     ContextoEnvio,
-    CotejoRequest,
-    CotejoResponse,
     DiagnosticoTriage,
     TriageRequest,
     TriageResponse,
@@ -27,7 +25,6 @@ from agents import (
     agente_normativo,
     consolidador,
 )
-from services import cotejo as servicio_cotejo
 from services import extraccion_pdf, presentacion, triage
 
 MAX_ADJUNTOS = 10
@@ -378,39 +375,3 @@ async def triage_correo_json(request: TriageRequest) -> TriageResponse:
         return _redactar(ficha, request.remitente, request.asunto, request.fecha_recepcion)
     return ficha
 
-
-@app.post(
-    "/correo/cotejo",
-    response_model=CotejoResponse,
-    dependencies=AUTORIZACION,
-    summary="Cotejar entidad y radicado, sin modelo de lenguaje y sin contenido documental",
-    description=(
-        "Verificación determinista aislada, para capas de ingesta que leen el documento "
-        "por su cuenta dentro de su propio entorno y solo necesitan la parte que un "
-        "modelo de lenguaje no resuelve con fiabilidad.\n\n"
-        "No recibe el texto del correo ni de los adjuntos, y no invoca al modelo: lo único "
-        "que sale del entorno de origen son denominaciones y radicados. La comparación de "
-        "entidades opera sobre núcleos léxicos completos y nunca por subcadenas, que es lo "
-        "que distingue a «La Previsora S.A.» de «Fiduprevisora S.A.»."
-    ),
-)
-async def cotejar_correspondencia(request: CotejoRequest) -> CotejoResponse:
-    resultado = servicio_cotejo.cotejar(
-        entidad_esperada=request.entidad_interpelada,
-        entidad_recibida=request.entidad_remitente,
-        radicado_enviado=request.radicado_enviado,
-        radicados_hallados=request.radicados_hallados,
-    )
-    alertas = servicio_cotejo.alertas_deterministas(
-        resultado=resultado,
-        entidad_esperada=request.entidad_interpelada,
-        entidad_recibida=request.entidad_remitente,
-        cuerpo="",
-        numero_adjuntos=1,
-        documentos_ilegibles=[],
-    )
-    return CotejoResponse(
-        cotejo=resultado,
-        alertas=alertas,
-        veredicto=servicio_cotejo.redactar_veredicto(resultado, alertas),
-    )
