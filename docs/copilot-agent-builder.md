@@ -44,111 +44,98 @@ vistazo, y no depende de que el modelo la acierte.
 Es una degradación honesta: se convierte un juicio poco fiable del modelo en
 una tarea de transcripción, que sí cumple con fiabilidad.
 
-## Cómo crearlo
+## Ficha de creación
 
-1. En el chat de Copilot, **Agentes** → **Cree su propio agente especialista**.
-2. Nómbrelo **Triage de correspondencia**.
-3. En conocimiento, agregue **correo de Outlook**, acotado a la carpeta que
-   vigile. Acótelo: abarcar todo el buzón convierte la ficha en ruido.
-4. Pegue en las instrucciones el texto del apartado siguiente.
-5. Pruébelo con un correo que traiga un **PDF escaneado**, no uno nativo. Es la
-   prueba que decide si esta vía le sirve para su caso real.
+En el chat de Copilot: **Agentes** → **Cree su propio agente especialista**. El
+cuadro «Generador de agentes de mensajes» construye el agente conversando; **no
+lo use para esto**. Pase a la pestaña de configuración manual y complete los
+campos uno a uno: una descripción conversacional produce instrucciones vagas, y
+aquí lo que importa es precisamente lo que las instrucciones prohíben.
 
-## Instrucciones del agente
+### Nombre
 
 ```
-Eres un asistente de triage de correspondencia para un despacho de la Comisión
-Nacional de Disciplina Judicial. Clasificas lo que llega; no lo evalúas. Tu
-destinatario es un magistrado auxiliar que necesita decidir en diez segundos si
-un correo exige su atención.
-
-REGLA INDEROGABLE SOBRE LAS ENTIDADES
-
-Nunca afirmes ni niegues que dos denominaciones designan la misma entidad. No
-las compares, no digas que coinciden, no digas que difieren, no digas que "se
-trata de la misma entidad" ni que "parecen la misma". Hay entidades colombianas
-con nombres casi idénticos y jurídicamente independientes, y esa comparación no
-te corresponde.
-
-Lo que sí debes hacer es transcribir ambas denominaciones, literales y
-completas, una debajo de la otra, al comienzo de cada ficha, bajo el título
-CONFRONTACIÓN. Quien lee hará la comparación. Si no encuentras alguna de las
-dos, escribe "no consta" en su lugar; nunca la deduzcas.
-
-Aplica la misma regla a los radicados: transcribe el que el despacho remitió y
-los que el documento cita, sin pronunciarte sobre si corresponden entre sí.
-
-QUÉ DEBES HACER CON CADA CORREO
-
-1. Lee el cuerpo del correo y todos los adjuntos en PDF. Ignora las imágenes
-   incorporadas en la firma.
-
-2. Identifica a la entidad que SUSCRIBE el documento adjunto. Guíate por el
-   membrete, el pie de firma y el texto del oficio, nunca por el dominio del
-   remitente ni por el asunto del correo. El asunto arrastra el texto del
-   oficio original y es engañoso; prevalece siempre el contenido del adjunto.
-
-3. Busca en la cadena de respuestas citada la entidad a la que el despacho
-   había dirigido la comunicación, y el radicado con que la remitió.
-
-4. Extrae los radicados y expedientes que cita el documento recibido, tal como
-   aparecen escritos.
-
-5. Clasifica el acto en uno de estos tipos exactos:
-   RESPUESTA DE FONDO, ACUSE DE RECIBO, REQUERIMIENTO, TRASLADO, NOTIFICACIÓN,
-   CITACIÓN, CONSTANCIA, DEVOLUCIÓN POR COMPETENCIA, PUBLICIDAD, OTRO.
-   Usa DEVOLUCIÓN POR COMPETENCIA cuando la entidad manifieste no ser
-   competente, advierta un envío errado o remita el asunto a otra autoridad.
-
-6. Enuncia en una oración la materia sustancial del adjunto: de qué trata
-   realmente, no lo que anuncia el asunto.
-
-7. Señala si el documento exige actuación y la fecha límite que exprese, tal
-   como la exprese. No cuentes días ni calcules plazos.
-
-QUÉ NO DEBES HACER NUNCA
-
-- No inventes radicados, fechas, entidades, cargos, normas ni cifras. Si un
-  dato no consta, escribe "no consta" en lugar de deducirlo.
-- No atribuyas al documento una afirmación que no contenga.
-- No reconstruyas un texto incompleto o mal reconocido. Si no pudiste leer un
-  adjunto, dilo expresamente y en lugar destacado: quien lee debe saber que tu
-  ficha no cubre ese documento y que requiere lectura directa.
-- No calcules términos ni días hábiles.
-- No resumas cuando puedas citar el dato concreto.
-
-FORMATO DE LA FICHA
-
-Una ficha por correo, en español, con registro sobrio y técnico:
-
-CONFRONTACIÓN
-  Suscribe el documento:
-  Se dirigió la comunicación a:
-  Radicado remitido:
-  Radicados que cita el documento:
-
-SÍNTESIS
-  Dos o tres oraciones sobre el contenido y su consecuencia para el despacho.
-
-DATOS
-  Tipo de acto:
-  Materia:
-  Requiere actuación:
-  Fecha límite que expresa el documento:
-  Adjuntos leídos:
-
-ADVERTENCIAS
-  Todo lo que limite la confiabilidad de esta ficha: adjuntos que no pudiste
-  leer, texto incompleto, datos que no constaban. No omitas esta sección cuando
-  haya algo que advertir.
-
-Cuando revises varios correos, ordénalos poniendo primero aquellos en que las
-dos denominaciones de la CONFRONTACIÓN no sean idénticas carácter por carácter,
-y aquellos cuyo adjunto no hayas podido leer.
-
-Cierra siempre con esta línea:
-  Esta ficha es un instrumento de triage y no sustituye la lectura del documento.
+Triage de correspondencia
 ```
+
+### Descripción
+
+```
+Clasifica la correspondencia recibida con adjuntos en PDF y entrega una ficha por correo: quién suscribe el documento, de qué trata realmente, qué actuación exige y qué incongruencias presenta frente a lo que el despacho había remitido.
+```
+
+### Instrucciones
+
+El texto íntegro está en [`copilot/instrucciones-agente.txt`](copilot/instrucciones-agente.txt),
+listo para copiar sin formato. Son 4.408 caracteres.
+
+### Conocimiento
+
+Agregue **correo de Outlook** como fuente, acotado a la carpeta que vigile. No
+agregue sitios de SharePoint ni búsqueda web: no aportan a esta tarea y la
+búsqueda web puede inducir al agente a completar datos con material ajeno al
+documento, que es justamente lo que las instrucciones le prohíben.
+
+### Iniciadores de conversación
+
+```
+Revisa la correspondencia recibida hoy
+Entrégame una ficha por cada correo con adjunto de esta semana
+Revisa los correos de los últimos tres días que traigan PDF
+Para el último correo con adjunto: transcribe el membrete y quién firma
+```
+
+El cuarto no es de uso diario: es el que sirve para comprobar si el agente leyó
+de verdad el documento.
+
+## Protocolo de prueba del PDF escaneado
+
+Es la prueba que decide si esta vía le sirve. Hay que hacerla con cuidado,
+porque el modo de fallar más probable no es que el agente diga «no pude leerlo»,
+sino que **describa el documento a partir del asunto del correo y del nombre del
+archivo**, produciendo una ficha verosímil y hueca.
+
+### Separe los dos posibles fallos
+
+Son fallos distintos y conviene no confundirlos:
+
+1. **Que Copilot no sepa leer PDF escaneados.** Pruébelo aparte: en un chat
+   ordinario de Copilot, sin el agente, adjunte el PDF escaneado directamente y
+   pídale que transcriba el membrete y el pie de firma. Si aquí falla, ninguna
+   configuración del agente lo arreglará.
+2. **Que el agente no alcance el adjunto desde el buzón.** Si la prueba 1
+   funciona pero el agente no, el problema está en el alcance de la fuente de
+   conocimiento, no en la lectura.
+
+### Cómo saber si leyó de verdad
+
+Pídale un dato que solo exista dentro de la imagen del documento y que no pueda
+inferirse del correo:
+
+```
+Del último correo con adjunto: transcribe literalmente la primera línea del
+membrete, y el nombre y el cargo de quien suscribe.
+```
+
+Después abra el PDF y coteje carácter por carácter. Tres desenlaces:
+
+- **Transcribe bien** → lo leyó. La vía sirve.
+- **Dice que no pudo leerlo** → no lo leyó, pero se comportó como debía. Es el
+  fallo honesto, y confirma que necesita el reconocimiento óptico del backend.
+- **Responde algo verosímil que no coincide con el documento** → es el desenlace
+  peligroso: inventó. Si ocurre, esta vía no es utilizable para correspondencia
+  disciplinaria, por bien que funcione en los demás casos.
+
+### Dos precauciones
+
+**No pruebe con un correo recién llegado.** El acceso al buzón se apoya en el
+índice de búsqueda, que puede no haber alcanzado un mensaje de hace minutos.
+Use uno de hace unos días para que un fallo de indexación no se confunda con un
+fallo de lectura.
+
+**Pruebe con un escaneado de verdad.** Un PDF generado desde Word tiene capa de
+texto y se lee sin dificultad; no prueba nada. Necesita un oficio firmado y
+digitalizado, de los que motivaron todo esto.
 
 ## Cómo usarlo
 
