@@ -67,7 +67,7 @@ Clasifica la correspondencia recibida con adjuntos en PDF y entrega una ficha po
 ### Instrucciones
 
 El texto íntegro está en [`copilot/instrucciones-agente.txt`](copilot/instrucciones-agente.txt),
-listo para copiar sin formato. Son 4.408 caracteres.
+listo para copiar sin formato. Son 4.798 caracteres.
 
 ### Conocimiento
 
@@ -136,6 +136,35 @@ fallo de lectura.
 **Pruebe con un escaneado de verdad.** Un PDF generado desde Word tiene capa de
 texto y se lee sin dificultad; no prueba nada. Necesita un oficio firmado y
 digitalizado, de los que motivaron todo esto.
+
+## Resultado de la primera prueba
+
+Sobre una notificación judicial de diez páginas, con la pregunta de
+transcripción del membrete:
+
+**Lo que funcionó.** Transcribió correctamente la primera línea del membrete, de
+modo que leyó el contenido y no lo dedujo del asunto ni del nombre del archivo.
+Al no hallar la firma escribió «no consta» en lugar de inventar un nombre y un
+cargo: la regla que más importaba se sostuvo. Citó la fuente de cada dato. Al
+pedírsele el detalle, enumeró las diez páginas una por una y declaró
+expresamente su limitación.
+
+**Lo que quedó abierto.** Dijo que la firma «no quedó capturada en el texto
+extraído» y que «no aparece en la extracción disponible del PDF». Esa redacción
+sugiere que trabaja sobre la capa de texto del documento. De ahí no se sigue
+todavía si aplica reconocimiento óptico: depende de si ese documento tenía firma
+visible como imagen —en cuyo caso no la reconoció— o si carecía de firma
+impresa por estar suscrito con certificado digital, como es frecuente en las
+notificaciones judiciales electrónicas. Se resuelve mirando el pie de la última
+página del texto principal.
+
+**Lo que enseñó sobre el material.** Ocho de las diez páginas eran constancias
+de retransmisión y de entrega de Outlook. Es lo habitual en estas
+notificaciones, e inflaba la ficha sin aportar nada. De ahí salieron las dos
+reglas que las instrucciones incorporan ahora: no describir ni contar esas
+constancias entre los adjuntos leídos, y consignar expresamente cuándo un
+documento termina en fórmula de despedida sin firma visible, sin suponer quién
+lo suscribe ni dar por sentado que falta una página.
 
 ## Cómo usarlo
 
