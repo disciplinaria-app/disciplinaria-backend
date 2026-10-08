@@ -1,0 +1,17 @@
+# Railway construye con Nixpacks. El reconocimiento óptico exige binarios del
+# sistema que no vienen en la imagen base: sin ellos los PDF escaneados —buena
+# parte de la correspondencia institucional— quedarían sin analizar.
+#
+#   tesseract-ocr      motor de reconocimiento óptico
+#   tesseract-ocr-spa  diccionario español, indispensable para oficios en español
+#   poppler-utils      provee pdftoppm, que pdf2image usa para rasterizar páginas
+#
+# Se usan paquetes Debian («aptPkgs») y no paquetes Nix porque el diccionario
+# español es un paquete propio en Debian, mientras que en Nixpkgs depende de un
+# override del derivado de tesseract que Nixpacks no permite expresar.
+# El marcador "..." conserva los paquetes que Nixpacks instala por defecto.
+#
+# Verificación tras el despliegue: GET /correo/diagnostico debe responder
+# ocr_disponible=true e idioma_espanol_disponible=true.
+[phases.setup]
+aptPkgs = ["...", "tesseract-ocr", "tesseract-ocr-spa", "poppler-utils"]

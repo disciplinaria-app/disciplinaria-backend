@@ -4,6 +4,7 @@ from . import (
     agente_coherencia_narrativa,
     agente_fondo_argumentativo,
     agente_normativo,
+    agente_triage,
     consolidador,
 )
 
@@ -13,5 +14,6 @@ __all__ = [
     "agente_coherencia_narrativa",
     "agente_fondo_argumentativo",
     "agente_normativo",
+    "agente_triage",
     "consolidador",
 ]

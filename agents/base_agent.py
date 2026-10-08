@@ -7,8 +7,21 @@ from models.schemas import ResultadoAgente
 TIMEOUT = httpx.Timeout(120.0, connect=10.0)
 
 
-async def llamar_openrouter(system_prompt: str, user_prompt: str) -> str:
-    """Realiza una llamada async a la API de OpenRouter."""
+async def llamar_openrouter(
+    system_prompt: str,
+    user_prompt: str,
+    modelo: str | None = None,
+    max_tokens: int = 2000,
+    temperatura: float = 0.2,
+) -> str:
+    """
+    Realiza una llamada async a la API de OpenRouter.
+
+    Los parámetros `modelo` y `max_tokens` permiten que agentes con otras
+    necesidades —por ejemplo el triage de correspondencia, que lee documentos
+    completos— ajusten el modelo y el presupuesto de salida sin alterar el
+    comportamiento de los cinco agentes de análisis.
+    """
     headers = {
         "Authorization": f"Bearer {OPENROUTER_API_KEY}",
         "Content-Type": "application/json",
@@ -16,13 +29,13 @@ async def llamar_openrouter(system_prompt: str, user_prompt: str) -> str:
         "X-Title": "DISCIPLINAR[IA]",
     }
     payload = {
-        "model": MODEL,
+        "model": modelo or MODEL,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
         ],
-        "temperature": 0.2,
-        "max_tokens": 2000,
+        "temperature": temperatura,
+        "max_tokens": max_tokens,
     }
     async with httpx.AsyncClient(timeout=TIMEOUT) as client:
         resp = await client.post(
