@@ -28,7 +28,7 @@ INTERVALO_POR_DOMINIO_S = float(os.getenv("HTTP_INTERVALO_DOMINIO", "1.0"))
 DOMINIOS_AUTORIZADOS = tuple(
     d.strip() for d in os.getenv(
         "DOMINIOS_AUTORIZADOS",
-        "corteconstitucional.gov.co,cortesuprema.gov.co,ramajudicial.gov.co,cndj.gov.co,"
+        "corteconstitucional.gov.co,cortesuprema.gov.co,ramajudicial.gov.co,"
         "consejodeestado.gov.co,samai.consejodeestado.gov.co,secretariasenado.gov.co,"
         "suin-juriscol.gov.co,funcionpublica.gov.co",
     ).split(",") if d.strip()

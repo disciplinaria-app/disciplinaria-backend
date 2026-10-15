@@ -50,6 +50,9 @@ class Servicio:
                                  usar_corpus: bool = True) -> tuple[Optional[DocumentoOficial], Respuesta, str]:
         """Corpus → URL directa/HTTP → navegador. Devuelve (doc, respuesta, canal)."""
         adaptador = self.adaptadores[corp]
+        if PORTALES[corp].get("desactivado") in ("1", "true", "True"):
+            return None, Respuesta(estado="portal_no_disponible", url_inicial=url or PORTALES[corp]["relatoria"],
+                                   detalle=PORTALES[corp].get("motivo_desactivado", "portal desactivado")), "ninguno"
         if url and "#inspeccionar" in url:
             return await self._inspeccionar_por_url(corp, url)
         if usar_corpus:
@@ -184,6 +187,11 @@ class Servicio:
         canales: list[dict] = []
         candidatos: dict[str, Candidato] = {}
         advertencias: list[str] = []
+        if PORTALES[corp].get("desactivado") in ("1", "true", "True"):
+            motivo = PORTALES[corp].get("motivo_desactivado", "portal desactivado")
+            return ResultadoBusqueda(estado="portal_no_disponible", candidatos=[], coverage_status="insuficiente",
+                                     canales_ejecutados=[{"canal": "buscador", "estado": "portal_no_disponible", "resultados": 0, "detalle": motivo}],
+                                     advertencias=[motivo + "; una búsqueda no ejecutada no demuestra inexistencia"])
 
         # Canal 0: corpus local.
         locales = self.corpus.buscar_texto(rev.texto.split()[:8], corporacion=corp.value)

@@ -57,6 +57,10 @@ PORTALES: dict[Corporacion, dict[str, str]] = {
         "relatoria": _env("CNDJ_RELATORIA", "https://relatoria.cndj.gov.co/"),
         "buscador": _env("CNDJ_BUSCADOR", "https://relatoria.cndj.gov.co/"),
         "webrelatoria": _env("CNDJ_WEBRELATORIA", "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml"),
+        # Desactivado por decisión del titular hasta contar con autorización de la
+        # entidad: el portal no acepta conexiones desde el servidor y no se elude.
+        "desactivado": _env("CNDJ_DESACTIVADO", "1"),
+        "motivo_desactivado": "portal de la CNDJ desactivado: pendiente de autorización de la entidad para consulta automatizada",
     },
 }
 

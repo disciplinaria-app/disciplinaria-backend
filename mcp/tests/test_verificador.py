@@ -299,3 +299,21 @@ class TestWebRelatoria:
         assert W._valor_para('"ilicitud  sustancial"', "frase") == '"ilicitud sustancial"'
         assert W._valor_para("ilicitud sustancial", "libre") == "ilicitud sustancial"
         assert W._valor_para("ilicitud sustancial", "palavra" if False else "palabra") == "sustancial"
+
+
+class TestFechasCorteConstitucional(unittest.TestCase):
+    def test_fecha_en_letras_y_numeros(self):
+        texto = ("Referencia: expediente T-1.234. Auto del 12 de abril de 2019. "
+                 "Magistrado ponente: X. Bogotá D.C., once (11) de agosto de dos mil veintitrés (2023).")
+        self.assertEqual(str(comparar.parsear_fecha("once (11) de agosto de dos mil veintitrés (2023)")), "2023-08-11")
+        self.assertEqual([str(d) for d in comparar.fechas_de_decision(texto)], ["2023-08-11"])
+        c = comparar.comparar_fecha("2023-08-11", texto)
+        self.assertEqual(c.estado, "confirmado")
+        c2 = comparar.comparar_fecha("2023-08-12", texto)
+        self.assertEqual(c2.estado, "discrepante")
+        self.assertEqual(c2.valor_oficial, "2023-08-11")
+
+    def test_cndj_desactivada(self):
+        from verificador.portales import PORTALES
+        from verificador.modelos import Corporacion
+        self.assertEqual(PORTALES[Corporacion.CNDJ].get("desactivado"), "1")

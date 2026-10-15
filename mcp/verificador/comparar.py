@@ -76,6 +76,10 @@ _RE_FECHA_LARGA = re.compile(
     r"\b(?P<d>\d{1,2})\s+(?:de\s+)?(?P<m>[a-záé]+)\s+(?:de\s+|del\s+)?(?P<a>\d{4})\b", re.I
 )
 _RE_FECHA_ISO = re.compile(r"\b(?P<a>\d{4})-(?P<m>\d{2})-(?P<d>\d{2})\b")
+# Estilo de la Corte Constitucional: «once (11) de agosto de dos mil veintitrés (2023)».
+_RE_FECHA_PAREN = re.compile(
+    r"\((?P<d>\d{1,2})\)\s*(?:de\s+)?(?P<m>[a-z]+)\s+(?:de\s+|del\s+)?[a-z\s]{0,60}?\((?P<a>\d{4})\)"
+)
 _RE_FECHA_NUM = re.compile(r"\b(?P<d>\d{1,2})/(?P<m>\d{1,2})/(?P<a>\d{4})\b")
 
 
@@ -93,6 +97,12 @@ def parsear_fecha(valor: str) -> Optional[date]:
             return date(int(m["a"]), int(m["m"]), int(m["d"]))
         except ValueError:
             return None
+    m = _RE_FECHA_PAREN.search(v)
+    if m and m["m"] in _MESES:
+        try:
+            return date(int(m["a"]), _MESES[m["m"]], int(m["d"]))
+        except ValueError:
+            return None
     m = _RE_FECHA_LARGA.search(v)
     if m and m["m"] in _MESES:
         try:
@@ -106,14 +116,26 @@ def fechas_en_texto(texto: str, limite: int = 60) -> list[tuple[date, int]]:
     """Fechas con su posición, en orden de aparición (hasta `limite`)."""
     salida: list[tuple[date, int]] = []
     t = quitar_tildes(texto.lower())
-    for patron in (_RE_FECHA_LARGA, _RE_FECHA_ISO, _RE_FECHA_NUM):
+    for patron in (_RE_FECHA_PAREN, _RE_FECHA_LARGA, _RE_FECHA_ISO, _RE_FECHA_NUM):
         for m in patron.finditer(t):
             f = parsear_fecha(m.group(0))
-            if f:
+            if f and all(abs(pos - m.start()) > 3 for _, pos in salida):
                 salida.append((f, m.start()))
             if len(salida) >= limite:
                 break
     return sorted(salida, key=lambda x: x[1])
+
+
+def fechas_de_decision(texto: str) -> list[date]:
+    """Fechas escritas al estilo «once (11) de agosto de dos mil veintitrés (2023)»,
+    que en las providencias corresponden a la fecha de la decisión."""
+    t = quitar_tildes(texto.lower())
+    salida: list[date] = []
+    for m in _RE_FECHA_PAREN.finditer(t):
+        f = parsear_fecha(m.group(0))
+        if f and f not in salida:
+            salida.append(f)
+    return salida
 
 
 # --- Ponentes ----------------------------------------------------------------
@@ -192,10 +214,15 @@ def comparar_fecha(suministrado: Optional[str], texto: str) -> Campo:
     if not f:
         return Campo(estado="no_hallado", valor_suministrado=suministrado,
                      evidencia="la fecha suministrada no es interpretable")
-    encontradas = fechas_en_texto(texto[:8000])
+    encontradas = fechas_en_texto(texto[:20000])
+    decision = fechas_de_decision(texto[:20000])
     if any(ff == f for ff, _ in encontradas):
         return Campo(estado="confirmado", valor_suministrado=suministrado, valor_oficial=f.isoformat(),
                      evidencia="fecha presente en el encabezado del documento oficial", localizador="encabezado")
+    if decision:
+        return Campo(estado="discrepante", valor_suministrado=suministrado,
+                     valor_oficial=", ".join(d.isoformat() for d in decision[:3]),
+                     evidencia="la fecha de la decisión escrita en letras y números en el encabezado es otra", localizador="encabezado")
     if encontradas:
         candidatas = sorted({ff.isoformat() for ff, _ in encontradas[:6]})
         return Campo(estado="discrepante", valor_suministrado=suministrado, valor_oficial=", ".join(candidatas),
