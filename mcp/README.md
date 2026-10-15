@@ -60,8 +60,9 @@ Cloud Run es un servicio de Google que ejecuta el programa solo cuando alguien l
 
 7. En claude.ai → *Configuración* → *Conectores* → *Añadir conector personalizado*:
    - Nombre: `Verificador jurisprudencial`
-   - URL: `https://SU-URL/mcp`
-   - Autenticación: *Bearer token* (o cabecera `Authorization`), valor: su llave.
+   - URL: la que imprime `publicar.sh` con la llave dentro: `https://SU-URL/k/SU-LLAVE/mcp`
+   - Sin autenticación adicional (claude.ai no envía cabeceras propias a conectores personalizados; por eso la llave viaja en la ruta, siempre bajo HTTPS). Si el asistente de claude.ai dice «No se ha podido comprobar el servidor», pulse *Continuar de todas formas*.
+   - Clientes que sí admiten cabeceras (Claude Code, Cursor, etc.) pueden usar `https://SU-URL/mcp` con `Authorization: Bearer SU-LLAVE`.
 8. En una conversación nueva, pida: «Ejecuta `diagnosticar_portales`». Si los cuatro portales responden `ok`, está listo. Si alguno dice `portal_no_disponible` o `timeout`, es el portal, no el servidor: reintente más tarde.
 
 ### Primera prueba real
@@ -88,4 +89,4 @@ MCP_API_KEY=prueba python server.py    # http://localhost:8080/health
 - Probado sin internet con documentos sintéticos: comparación de campos, roles de sección, pasaje en salvamento, privacidad, corpus y estados técnicos.
 - **No probado todavía contra los portales reales**: el entorno donde se construyó no alcanza dominios `.gov.co`. Las rutas y selectores son el punto de partida documentado; `diagnosticar_portales` y la primera prueba real dirán qué hay que ajustar. El adaptador de la Corte Constitucional usa el patrón histórico de URL de la relatoría; los de CSJ, Consejo de Estado y CNDJ dependen del navegador y de selectores configurables.
 - Sin base de datos: el corpus vive en `/tmp` del contenedor y se pierde al apagarse; es suficiente para la caché de 30 días dentro de una sesión de trabajo. Si más adelante quiere persistencia, se añade un bucket de Cloud Storage.
-- Sin OAuth: autenticación por llave, adecuada para un solo despacho.
+- Sin OAuth: autenticación por llave (en cabecera o en la ruta `/k/<llave>/mcp`), adecuada para un solo despacho. Si la llave se filtra, basta redesplegar con `MCP_API_KEY=nueva ./publicar.sh …` para rotarla.

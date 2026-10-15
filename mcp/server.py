@@ -2,6 +2,7 @@
 
 Arranque local:   python server.py            (escucha en $PORT, por defecto 8080)
 Cliente:          POST https://<host>/mcp  con  Authorization: Bearer $MCP_API_KEY
+                  o bien  https://<host>/k/$MCP_API_KEY/mcp  (sin cabecera; para claude.ai)
 Salud:            GET  https://<host>/health  (sin autenticación)
 """
 from __future__ import annotations
@@ -13,7 +14,6 @@ from typing import Optional
 
 import uvicorn
 from mcp.server.mcpserver import MCPServer
-from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import JSONResponse
 
@@ -110,18 +110,56 @@ async def diagnosticar_portales() -> dict:
 
 
 # --- Aplicación ASGI con autenticación por llave --------------------------------
+#
+# La llave se acepta de dos formas:
+#   (a) cabecera  Authorization: Bearer <llave>   (clientes que admiten cabeceras)
+#   (b) en la ruta  /k/<llave>/mcp                (claude.ai, que no envía cabeceras
+#       propias a conectores personalizados sin OAuth). La ruta se reescribe a /mcp.
+# Las rutas /.well-known/* responden 404 para que el cliente entienda que no hay
+# OAuth que descubrir.
 
-class AutenticacionPorLlave(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        if request.url.path in ("/health", "/"):
-            return await call_next(request)
+from starlette.types import ASGIApp, Receive, Scope, Send
+
+
+class AutenticacionPorLlave:
+    def __init__(self, app: ASGIApp) -> None:
+        self.app = app
+
+    async def _responder(self, send: Send, codigo: int, cuerpo: dict) -> None:
+        resp = JSONResponse(cuerpo, status_code=codigo)
+        await resp({"type": "http"}, None, send)  # type: ignore[arg-type]
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            return await self.app(scope, receive, send)
+        path: str = scope["path"]
+        if path in ("/", "/health"):
+            return await self.app(scope, receive, send)
+        if path.startswith("/.well-known/"):
+            return await self._responder(send, 404, {"error": "sin configuración OAuth; este servidor usa llave"})
         if not API_KEY:
-            return JSONResponse({"error": "MCP_API_KEY no configurada en el servidor"}, status_code=503)
-        auth = request.headers.get("authorization", "")
-        llave = auth[7:] if auth.lower().startswith("bearer ") else request.headers.get("x-api-key", "")
+            return await self._responder(send, 503, {"error": "MCP_API_KEY no configurada en el servidor"})
+
+        llave = ""
+        nueva_ruta = path
+        if path.startswith("/k/"):
+            partes = path.split("/", 3)  # ['', 'k', llave, resto]
+            llave = partes[2] if len(partes) >= 3 else ""
+            nueva_ruta = "/" + partes[3] if len(partes) == 4 and partes[3] else "/mcp"
+        else:
+            cab = dict((k.decode().lower(), v.decode()) for k, v in scope.get("headers", []))
+            auth = cab.get("authorization", "")
+            llave = auth[7:] if auth.lower().startswith("bearer ") else cab.get("x-api-key", "")
+
         if not llave or not hmac.compare_digest(llave, API_KEY):
-            return JSONResponse({"error": "no autorizado"}, status_code=401)
-        return await call_next(request)
+            return await self._responder(send, 401, {"error": "no autorizado"})
+
+        nueva_ruta = nueva_ruta.rstrip("/") or "/mcp"
+        if nueva_ruta != path:
+            scope = dict(scope)
+            scope["path"] = nueva_ruta
+            scope["raw_path"] = nueva_ruta.encode()
+        return await self.app(scope, receive, send)
 
 
 @mcp.custom_route("/health", methods=["GET"])
@@ -134,8 +172,7 @@ async def raiz(_: Request):
     return JSONResponse({"servicio": "redactar2-verificador", "version": VERSION, "mcp": "/mcp", "salud": "/health"})
 
 
-app = mcp.streamable_http_app(stateless_http=True, json_response=True, host="0.0.0.0")
-app.add_middleware(AutenticacionPorLlave)
+app = AutenticacionPorLlave(mcp.streamable_http_app(stateless_http=True, json_response=True, host="0.0.0.0"))
 
 
 if __name__ == "__main__":

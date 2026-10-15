@@ -206,5 +206,42 @@ class TestServicio(unittest.TestCase):
         self.run_async(c.cerrar())
 
 
+class TestServidor(unittest.TestCase):
+    """Autenticación del servidor ASGI, sin red: se invoca la app directamente."""
+
+    def setUp(self):
+        os.environ["MCP_API_KEY"] = "clave-de-prueba"
+        import importlib
+        import server
+        importlib.reload(server)
+        self.app = server.app
+
+    def _llamar(self, metodo, ruta, cabeceras=None, cuerpo=b""):
+        import asyncio
+        estado = {}
+        async def receive():
+            return {"type": "http.request", "body": cuerpo, "more_body": False}
+        async def send(msg):
+            if msg["type"] == "http.response.start":
+                estado["codigo"] = msg["status"]
+        scope = {"type": "http", "method": metodo, "path": ruta, "raw_path": ruta.encode(), "query_string": b"",
+                 "headers": [(k.lower().encode(), v.encode()) for k, v in (cabeceras or {}).items()],
+                 "scheme": "http", "server": ("test", 80), "client": ("test", 1), "http_version": "1.1"}
+        asyncio.get_event_loop().run_until_complete(self.app(scope, receive, send))
+        return estado.get("codigo")
+
+    def test_health_sin_llave(self):
+        self.assertEqual(self._llamar("GET", "/health"), 200)
+
+    def test_mcp_sin_llave_401(self):
+        self.assertEqual(self._llamar("POST", "/mcp", {"content-type": "application/json"}, b"{}"), 401)
+
+    def test_llave_mala_en_ruta_401(self):
+        self.assertEqual(self._llamar("POST", "/k/otra/mcp", {"content-type": "application/json"}, b"{}"), 401)
+
+    def test_well_known_404(self):
+        self.assertEqual(self._llamar("GET", "/.well-known/oauth-authorization-server"), 404)
+
+
 if __name__ == "__main__":
     unittest.main()
