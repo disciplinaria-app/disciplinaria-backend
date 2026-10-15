@@ -293,3 +293,9 @@ class TestWebRelatoria:
     def test_filtra_por_ventana_de_anios(self):
         a = self._adaptador()
         assert a._extraer(_FILA_CNDJ, "x", 2023, 2026) == []
+
+    def test_valores_por_estrategia(self):
+        from verificador.adaptadores.webrelatoria import WebRelatoria as W
+        assert W._valor_para('"ilicitud  sustancial"', "frase") == '"ilicitud sustancial"'
+        assert W._valor_para("ilicitud sustancial", "libre") == "ilicitud sustancial"
+        assert W._valor_para("ilicitud sustancial", "palavra" if False else "palabra") == "sustancial"

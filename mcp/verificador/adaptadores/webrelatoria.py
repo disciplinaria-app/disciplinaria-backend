@@ -81,7 +81,11 @@ class WebRelatoria(Adaptador):
         try:
             if await tema.count() and await tema.is_visible():
                 return True
-            await p.get_by_text(SEL["panel_criterios"], exact=False).first.click(timeout=4000)
+            toggler = p.locator(".ui-panel-titlebar-toggler, [id$='_toggler']").first
+            if await toggler.count():
+                await toggler.click(timeout=3000)
+            else:
+                await p.get_by_text(SEL["panel_criterios"], exact=False).first.click(timeout=4000)
             for _ in range(6):
                 if await tema.count() and await tema.is_visible():
                     return True
@@ -90,13 +94,15 @@ class WebRelatoria(Adaptador):
             pass
         return False
 
-    async def _campo_texto(self, p) -> tuple[Optional[object], str]:
+    async def _campo_texto(self, p, preferido: str = "texto_completo") -> tuple[Optional[object], str]:
         """Localiza el campo «Texto Completo» por su rótulo; si no existe, «Tema»."""
         intentos = [
             ("texto_completo", SEL["campo_texto"]),
             ("texto_completo", "xpath=//*[contains(normalize-space(.), 'Texto Completo') and not(.//*[contains(normalize-space(.), 'Texto Completo')])]/following::input[@type='text'][1]"),
             ("tema", SEL["campo_texto_respaldo"]),
         ]
+        if preferido == "tema":
+            intentos = [i for i in intentos if i[0] == "tema"] + [i for i in intentos if i[0] != "tema"]
         for nombre, selector in intentos:
             try:
                 loc = p.locator(selector).first
@@ -170,20 +176,64 @@ class WebRelatoria(Adaptador):
             await p.wait_for_timeout(1000)
         return "tiempo", ""
 
-    async def _ejecutar_busqueda(self, p, consulta: str) -> tuple[str, str, dict]:
+    # Formas de diligenciar el formulario, en orden de preferencia. El portal no
+    # documenta su sintaxis; la primera que devuelva filas se recuerda para las
+    # consultas siguientes de la misma instancia.
+    ESTRATEGIAS = (
+        ("texto_completo", "frase"),     # "ilicitud sustancial"
+        ("texto_completo", "libre"),     # ilicitud sustancial
+        ("texto_completo", "palabra"),   # sustancial (la palabra más larga)
+        ("tema", "libre"),               # índice temático
+    )
+    _estrategia_util: Optional[tuple[str, str]] = None
+
+    @staticmethod
+    def _valor_para(consulta: str, forma: str) -> str:
+        base = re.sub(r"\s+", " ", consulta.strip().strip('"').strip())
+        if forma == "frase":
+            return _formatear_consulta(base)
+        if forma == "palabra":
+            palabras = [w for w in re.findall(r"[\wáéíóúñÁÉÍÓÚÑ]+", base) if len(w) > 3]
+            return max(palabras, key=len) if palabras else base
+        return base
+
+    async def _ejecutar_busqueda(self, p, consulta: str, estrategia: Optional[tuple[str, str]] = None) -> tuple[str, str, dict]:
         """Diligencia el formulario y lanza la búsqueda. Devuelve (estado, mensaje, diagnóstico)."""
+        campo_pref, forma = estrategia or self._estrategia_util or self.ESTRATEGIAS[0]
         diag: dict[str, str] = {}
         diag["panel"] = "desplegado" if await self._expandir_criterios(p) else "oculto"
-        campo, nombre = await self._campo_texto(p)
+        campo, nombre = await self._campo_texto(p, campo_pref)
         diag["campo"] = nombre
         if campo is None:
             return "sin_campo", "no se encontró el campo de texto del formulario", diag
-        consulta_portal = _formatear_consulta(consulta)
-        diag["valor"] = await self._escribir(campo, consulta_portal)
+        diag["valor"] = await self._escribir(campo, self._valor_para(consulta, forma))
         diag["sentencia"] = await self._marcar_sentencia(p)
         await self._clic_buscar(p)
         estado, msg = await self._esperar_resultados(p)
         await p.wait_for_timeout(800)
+        if estado == "filas":
+            self._estrategia_util = (nombre, forma)
+        return estado, msg, diag
+
+    async def _buscar_con_cascada(self, p, url: str, consulta: str, inicio: float) -> tuple[str, str, dict]:
+        """Prueba las estrategias hasta que una devuelva filas o se agote el tiempo."""
+        orden = list(self.ESTRATEGIAS)
+        if self._estrategia_util in orden:
+            orden.remove(self._estrategia_util)
+            orden.insert(0, self._estrategia_util)
+        intentos: list[str] = []
+        estado, msg, diag = "tiempo", "", {}
+        for i, est in enumerate(orden):
+            if i and asyncio.get_event_loop().time() - inicio > 24:
+                diag["intentos"] = "; ".join(intentos) + "; (sin tiempo para más)"
+                return estado, msg, diag
+            if i:
+                await p.goto(url, wait_until="domcontentloaded")
+            estado, msg, diag = await self._ejecutar_busqueda(p, consulta, est)
+            intentos.append(f"{est[0]}/{est[1]}→{estado}")
+            if estado == "filas" or estado == "sin_campo":
+                break
+        diag["intentos"] = "; ".join(intentos)
         return estado, msg, diag
 
     @staticmethod
@@ -206,7 +256,7 @@ class WebRelatoria(Adaptador):
         try:
             async with self.nav.pagina() as p:
                 r = await p.goto(url, wait_until="domcontentloaded")
-                estado, msg, diag = await self._ejecutar_busqueda(p, consulta)
+                estado, msg, diag = await self._buscar_con_cascada(p, url, consulta, inicio)
                 codigo = r.status if r else None
                 if estado != "filas":
                     html = await p.content()
@@ -351,7 +401,7 @@ class WebRelatoria(Adaptador):
         try:
             async with self.nav.pagina() as p:
                 r = await p.goto(base, wait_until="domcontentloaded")
-                estado, msg, diag = await self._ejecutar_busqueda(p, consulta)
+                estado, msg, diag = await self._buscar_con_cascada(p, base, consulta, asyncio.get_event_loop().time())
                 if estado != "filas":
                     return None, Respuesta(estado="no_hallada", url_inicial=url, url_final=p.url,
                                            detalle=f"al repetir la búsqueda el portal no mostró filas ({msg or estado}) · {self._diag_texto(diag)}")

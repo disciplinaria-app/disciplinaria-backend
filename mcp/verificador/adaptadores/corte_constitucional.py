@@ -84,8 +84,13 @@ class CorteConstitucional(Adaptador):
                 filas = p.locator("#tabla-resultado a[href*='/relatoria/']")
                 aviso = p.get_by_text("No se encontraron resultados", exact=False)
                 for _ in range(15):
-                    if await filas.count() > 0 or await aviso.count() > 0:
+                    if await filas.count() > 0:
                         break
+                    try:  # el texto del aviso existe oculto en la plantilla; solo vale si se ve
+                        if await aviso.count() > 0 and await aviso.first.is_visible():
+                            break
+                    except Exception:
+                        pass
                     await p.wait_for_timeout(1000)
                 await p.wait_for_timeout(1000)
                 html = await p.content()
