@@ -8,6 +8,7 @@ selector de modo (#selectBuscador), campo #textoBuscador y botón «Buscar».
 """
 from __future__ import annotations
 
+import asyncio
 import re
 from typing import Optional
 from urllib.parse import urljoin
@@ -81,24 +82,34 @@ class CorteConstitucional(Adaptador):
             async with self.nav.pagina() as p:
                 r = await p.goto(url, wait_until="domcontentloaded")
                 # Esperar a que aparezcan filas con enlaces o el aviso de «sin resultados».
+                # El buscador muestra «No se encontraron resultados» mientras carga y
+                # luego pinta la tabla: solo se acepta el aviso si persiste.
                 filas = p.locator("#tabla-resultado a[href*='/relatoria/']")
                 aviso = p.get_by_text("No se encontraron resultados", exact=False)
-                for _ in range(15):
+                aviso_seguido = 0
+                inicio = asyncio.get_event_loop().time()
+                while asyncio.get_event_loop().time() - inicio < 28:
                     if await filas.count() > 0:
                         break
-                    try:  # el texto del aviso existe oculto en la plantilla; solo vale si se ve
-                        if await aviso.count() > 0 and await aviso.first.is_visible():
-                            break
+                    try:
+                        visible = await aviso.count() > 0 and await aviso.first.is_visible()
                     except Exception:
-                        pass
+                        visible = False
+                    aviso_seguido = aviso_seguido + 1 if visible else 0
+                    if aviso_seguido >= 4 and asyncio.get_event_loop().time() - inicio > 8:
+                        break
                     await p.wait_for_timeout(1000)
                 await p.wait_for_timeout(1000)
                 html = await p.content()
                 candidatos = self._extraer_candidatos(html, p.url, max_resultados)
                 estado = "ok" if candidatos else "sin_resultados"
+                espera = int(asyncio.get_event_loop().time() - inicio)
+                n_filas = await p.locator("#tabla-resultado tr").count()
+                n_enlaces = await filas.count()
                 return candidatos, Respuesta(estado=estado, url_inicial=url, url_final=p.url,
                                              codigo=r.status if r else None, contenido=html.encode(), tipo="text/html",
-                                             detalle=None if candidatos else "el buscador no mostró providencias para esa frase")
+                                             detalle=None if candidatos else
+                                             f"el buscador no mostró providencias para esa frase (espera {espera} s, filas en tabla {n_filas}, enlaces {n_enlaces}, aviso visible {aviso_seguido > 0})")
         except Exception as e:
             nombre = e.__class__.__name__
             return [], Respuesta(estado="timeout" if "Timeout" in nombre else "portal_no_disponible",

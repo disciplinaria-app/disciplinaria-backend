@@ -86,10 +86,10 @@ class WebRelatoria(Adaptador):
                 await toggler.click(timeout=3000)
             else:
                 await p.get_by_text(SEL["panel_criterios"], exact=False).first.click(timeout=4000)
-            for _ in range(6):
+            for _ in range(3):
                 if await tema.count() and await tema.is_visible():
                     return True
-                await p.wait_for_timeout(500)
+                await p.wait_for_timeout(400)
         except Exception:
             pass
         return False
@@ -159,7 +159,7 @@ class WebRelatoria(Adaptador):
     async def _clic_buscar(self, p) -> None:
         await p.locator(SEL["boton_buscar"]).first.click(timeout=5000)
 
-    async def _esperar_resultados(self, p, segundos: int = 20) -> tuple[str, str]:
+    async def _esperar_resultados(self, p, segundos: int = 12) -> tuple[str, str]:
         """Devuelve ('filas'|'aviso'|'tiempo', mensaje del portal)."""
         filas = p.locator(SEL_FILAS)
         aviso = p.locator(SEL["mensaje_portal"])
@@ -181,10 +181,12 @@ class WebRelatoria(Adaptador):
     # consultas siguientes de la misma instancia.
     ESTRATEGIAS = (
         ("texto_completo", "frase"),     # "ilicitud sustancial"
-        ("texto_completo", "libre"),     # ilicitud sustancial
+        ("tema", "libre"),               # índice temático (descriptores)
+        ("tema", "palabra"),             # un solo descriptor probable
         ("texto_completo", "palabra"),   # sustancial (la palabra más larga)
-        ("tema", "libre"),               # índice temático
+        ("texto_completo", "libre"),     # ilicitud sustancial
     )
+    PRESUPUESTO_CASCADA_S = float(os.getenv("WR_PRESUPUESTO_S", "32"))
     _estrategia_util: Optional[tuple[str, str]] = None
 
     @staticmethod
@@ -224,7 +226,7 @@ class WebRelatoria(Adaptador):
         intentos: list[str] = []
         estado, msg, diag = "tiempo", "", {}
         for i, est in enumerate(orden):
-            if i and asyncio.get_event_loop().time() - inicio > 24:
+            if i and asyncio.get_event_loop().time() - inicio > self.PRESUPUESTO_CASCADA_S:
                 diag["intentos"] = "; ".join(intentos) + "; (sin tiempo para más)"
                 return estado, msg, diag
             if i:
