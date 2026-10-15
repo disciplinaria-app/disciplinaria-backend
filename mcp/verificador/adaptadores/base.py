@@ -31,6 +31,10 @@ class Adaptador:
     def url_directa(self, identificador: str) -> Optional[str]:
         return None
 
+    def urls_directas(self, identificador: str) -> list[str]:
+        u = self.url_directa(identificador)
+        return [u] if u else []
+
     # --- b) búsqueda ------------------------------------------------------
     async def buscar(self, consulta: str, desde: Optional[int] = None, hasta: Optional[int] = None,
                      max_resultados: int = 20) -> tuple[list[Candidato], Respuesta]:

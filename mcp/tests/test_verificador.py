@@ -162,7 +162,7 @@ class TestServicio(unittest.TestCase):
         s, _ = servicio_con_html(SENTENCIA_SINTETICA, self.URL)
         r = self.run_async(s.verificar_cita("CC", tipo_numero="T-123/2005"))
         self.assertEqual(r.estado_global, "no_hallada")
-        self.assertIn("patrón de URL", r.advertencias[0])
+        self.assertIn("ni las rutas directas ni el buscador", r.advertencias[0])
 
     def test_rechaza_ratio_con_datos_de_partes(self):
         s, falso = servicio_con_html(SENTENCIA_SINTETICA, self.URL)

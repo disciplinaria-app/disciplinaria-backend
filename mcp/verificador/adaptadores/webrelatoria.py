@@ -37,7 +37,16 @@ class WebRelatoria(Adaptador):
             async with self.nav.pagina() as p:
                 r = await p.goto(url, wait_until="domcontentloaded")
                 campo = p.locator(SEL["campo_texto"]).first
-                await campo.fill(consulta)
+                if not await campo.is_visible():
+                    try:  # el panel «Criterios de búsqueda» está plegado
+                        await p.get_by_text(SEL["panel_criterios"], exact=False).first.click(timeout=5000)
+                        await p.wait_for_timeout(800)
+                    except Exception:
+                        pass
+                try:
+                    await campo.fill(consulta, timeout=8000)
+                except Exception:
+                    await campo.evaluate("(e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles:true})); e.dispatchEvent(new Event('change', {bubbles:true})); }", consulta)
                 await p.locator(SEL["boton_buscar"]).first.click()
                 try:
                     await p.wait_for_selector(SEL["filas_resultado"], timeout=25000)

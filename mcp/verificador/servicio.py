@@ -54,26 +54,32 @@ class Servicio:
             if doc:
                 return doc, Respuesta(estado="ok", url_inicial=doc.url_oficial, url_final=doc.url_oficial,
                                       consultada_en=doc.consultada_en, detalle="corpus local"), "corpus"
-        destino = url or adaptador.url_directa(identificador)
-        if not destino:
-            # Sin URL directa: localizar por el buscador con el identificador como consulta.
-            candidatos, resp = await adaptador.buscar(identificador, max_resultados=5)
-            can = canonizar_identificador(identificador)
-            elegido = next((c for c in candidatos if c.identificador == can and c.url_oficial), None)
-            if not elegido:
-                if resp.estado == "ok":
-                    resp.estado = "no_hallada"
-                    resp.detalle = "el buscador respondió pero ningún resultado coincide con el identificador"
-                return None, resp, "buscador"
-            destino = elegido.url_oficial
-        doc, resp = await adaptador.recuperar(destino, canonizar_identificador(identificador))
-        if doc:
-            self.corpus.guardar(doc)
-            return doc, resp, doc.canal
-        if resp.estado == "sin_resultados":
+        can = canonizar_identificador(identificador)
+        destinos = [url] if url else adaptador.urls_directas(identificador)
+        ultima: Optional[Respuesta] = None
+        for destino in destinos:
+            doc, resp = await adaptador.recuperar(destino, can)
+            ultima = resp
+            if doc and (url or can in identificadores_en_texto(doc.metadatos.get("title", "") + "\n" + doc.texto[:6000])):
+                self.corpus.guardar(doc)
+                return doc, resp, doc.canal
+            if resp.estado in ("portal_no_disponible", "timeout", "bloqueada"):
+                return None, resp, "http"
+        # Sin URL directa válida: localizar por el buscador con el identificador como consulta.
+        candidatos, resp = await adaptador.buscar(identificador, max_resultados=5)
+        elegido = next((c for c in candidatos if c.identificador == can and c.url_oficial), None)
+        if elegido:
+            doc, resp2 = await adaptador.recuperar(elegido.url_oficial, can)
+            if doc:
+                self.corpus.guardar(doc)
+                return doc, resp2, doc.canal
+            resp = resp2
+        if resp.estado in ("ok", "sin_resultados"):
             resp.estado = "no_hallada"
-            resp.detalle = (resp.detalle or "") + " · la URL directa no existe en el portal; puede que el identificador esté mal o que el patrón de URL haya cambiado"
-        return None, resp, "http"
+            resp.detalle = ("ni las rutas directas ni el buscador oficial devolvieron un documento que muestre el "
+                            "identificador; puede que el identificador esté mal escrito o que el portal haya cambiado"
+                            + (f" · último intento directo: {ultima.detalle}" if ultima and ultima.detalle else ""))
+        return None, resp, "buscador"
 
     # ------------------------------------------------------------ verificar
     async def verificar_cita(self, corporacion: str, tipo_numero: Optional[str] = None, radicado: Optional[str] = None,

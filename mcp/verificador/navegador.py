@@ -97,8 +97,38 @@ class Navegador:
                          contenido=html.encode("utf-8"), tipo="text/html", latencia_ms=lat)
 
 
+    async def ejecutar_acciones(self, p, acciones: list[dict]) -> list[str]:
+        """Ejecuta una lista de acciones sobre la página: fill, select, click,
+        click_texto, esperar. Devuelve los errores (no aborta)."""
+        errores: list[str] = []
+        for a in acciones or []:
+            tipo = a.get("tipo")
+            try:
+                if tipo == "fill":
+                    loc = p.locator(a["selector"]).first
+                    try:
+                        await loc.fill(a.get("valor", ""), timeout=8000)
+                    except Exception:
+                        # Campo oculto (panel plegado): fijar el valor por JS.
+                        await loc.evaluate("(e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles:true})); e.dispatchEvent(new Event('change', {bubbles:true})); }", a.get("valor", ""))
+                elif tipo == "select":
+                    await p.locator(a["selector"]).first.select_option(label=a.get("valor"), timeout=8000)
+                elif tipo == "click":
+                    await p.locator(a["selector"]).first.click(timeout=8000)
+                elif tipo == "click_texto":
+                    await p.get_by_text(a["texto"], exact=False).first.click(timeout=8000)
+                elif tipo == "esperar":
+                    await p.wait_for_timeout(int(a.get("ms", 1500)))
+                elif tipo == "esperar_selector":
+                    await p.wait_for_selector(a["selector"], timeout=int(a.get("ms", 20000)))
+                else:
+                    errores.append(f"acción desconocida: {tipo}")
+            except Exception as e:
+                errores.append(f"{tipo} {a.get('selector') or a.get('texto') or ''}: {e.__class__.__name__}: {str(e)[:120]}")
+        return errores
+
     async def inspeccionar(self, url: str, esperar_ms: int = 4000, patron_enlaces: Optional[str] = None,
-                           clic_texto: Optional[str] = None) -> dict:
+                           clic_texto: Optional[str] = None, acciones: Optional[list[dict]] = None) -> dict:
         """Describe una página renderizada: URL final, título, campos de formulario,
         botones, enlaces (filtrados por patrón) e iframes. Herramienta de
         mantenimiento para ajustar selectores cuando un portal cambia."""
@@ -116,6 +146,7 @@ class Navegador:
                         clic_error = None
                 else:
                     clic_error = None
+                errores_acciones = await self.ejecutar_acciones(p, acciones or [])
                 try:
                     await p.wait_for_load_state("networkidle", timeout=esperar_ms)
                 except Exception:
@@ -140,7 +171,8 @@ class Navegador:
                                  caracteres_texto: (document.body.innerText||'').length };
                     }""", patron_enlaces)
                 datos.update({"estado": "ok", "url_inicial": url, "url_final": p.url,
-                              "codigo_http": resp.status if resp else None, "clic_error": clic_error})
+                              "codigo_http": resp.status if resp else None, "clic_error": clic_error,
+                              "errores_acciones": errores_acciones})
                 return datos
         except Exception as e:
             nombre = e.__class__.__name__
