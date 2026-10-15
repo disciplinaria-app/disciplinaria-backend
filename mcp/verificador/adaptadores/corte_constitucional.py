@@ -83,7 +83,7 @@ class CorteConstitucional(Adaptador):
                 # Esperar a que aparezcan filas con enlaces o el aviso de «sin resultados».
                 filas = p.locator("#tabla-resultado a[href*='/relatoria/']")
                 aviso = p.get_by_text("No se encontraron resultados", exact=False)
-                for _ in range(30):
+                for _ in range(15):
                     if await filas.count() > 0 or await aviso.count() > 0:
                         break
                     await p.wait_for_timeout(1000)

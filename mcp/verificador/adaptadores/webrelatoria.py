@@ -59,7 +59,7 @@ class WebRelatoria(Adaptador):
                 await p.locator(SEL["boton_buscar"]).first.click()
                 filas_loc = p.locator(SEL["filas_resultado"] + ":not(.ui-datatable-empty-message)")
                 aviso = p.locator(SEL["mensaje_portal"])
-                for _ in range(30):
+                for _ in range(15):
                     if await filas_loc.count() > 0:
                         break
                     if await aviso.count() and (await aviso.first.inner_text()).strip():

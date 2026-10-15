@@ -24,8 +24,9 @@ from .navegador import Navegador
 from .portales import PORTALES
 from .texto import localizar_pasaje, posicion_a_localizador, rol_en_posicion, segmentar
 
-TOPE_CONSULTAS_POR_BUSQUEDA = 8
-TIEMPO_SEGURO_S = 50  # por debajo del límite habitual de un cliente MCP
+TOPE_CONSULTAS_POR_BUSQUEDA = 6
+TIEMPO_SEGURO_S = 40          # por debajo del límite habitual (60 s) de un cliente MCP
+TIEMPO_ESTIMADO_CONSULTA_S = 18  # no se inicia una variante si no cabe en el tiempo seguro
 
 
 class Servicio:
@@ -168,11 +169,17 @@ class Servicio:
         familias = variantes(rev.texto, PORTALES[corp]["nombre"], desde, hasta, sentencia_hito,
                              incluir_adversas=(modo == "amplio"))
         if modo != "amplio":
-            familias = familias[:3]
+            familias = familias[:2]
         inicio = asyncio.get_event_loop().time()
+        consultas_vistas: set[str] = set()
         for v in familias[:TOPE_CONSULTAS_POR_BUSQUEDA]:
-            if asyncio.get_event_loop().time() - inicio > TIEMPO_SEGURO_S:
-                advertencias.append("se alcanzó el tiempo seguro de respuesta; cobertura parcial. Repita con modo='rapido' o con otra subregla")
+            clave = v["consulta"].strip().strip('"').lower()
+            if clave in consultas_vistas:
+                continue
+            consultas_vistas.add(clave)
+            transcurrido = asyncio.get_event_loop().time() - inicio
+            if transcurrido + TIEMPO_ESTIMADO_CONSULTA_S > TIEMPO_SEGURO_S:
+                advertencias.append("se alcanzó el tiempo seguro de respuesta; cobertura parcial. Repita con otra subregla o en una segunda llamada")
                 break
             encontrados, resp = await adaptador.buscar(v["consulta"], desde, hasta, max_candidatos)
             canales.append({"canal": "buscador", "familia": v["familia"], "consulta": v["consulta"],
