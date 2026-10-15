@@ -41,8 +41,11 @@ PORTALES: dict[Corporacion, dict[str, str]] = {
     Corporacion.CONSEJO_ESTADO: {
         "nombre": "Consejo de Estado",
         "base": _env("CE_BASE", "https://www.consejodeestado.gov.co"),
-        "relatoria": _env("CE_RELATORIA", "https://samai.consejodeestado.gov.co/TitulacionRelatoria/BuscadorProvidenciasTituladas.aspx"),
-        "buscador": _env("CE_BUSCADOR", "https://samai.consejodeestado.gov.co/TitulacionRelatoria/BuscadorProvidenciasTituladas.aspx"),
+        # El buscador «tradicional» (misma aplicación WebRelatoria que CNDJ y CSJ) cubre
+        # toda la jurisprudencia; «Mi Relatoría» de SAMAI solo desde diciembre de 2021.
+        "relatoria": _env("CE_RELATORIA", "https://servicios.consejodeestado.gov.co/WebRelatoria/ce/index.xhtml"),
+        "buscador": _env("CE_BUSCADOR", "https://servicios.consejodeestado.gov.co/WebRelatoria/ce/index.xhtml"),
+        "samai": _env("CE_SAMAI", "https://samai.consejodeestado.gov.co/TitulacionRelatoria/BuscadorProvidenciasTituladas.aspx"),
     },
     Corporacion.CNDJ: {
         "nombre": "Comisión Nacional de Disciplina Judicial",
@@ -60,7 +63,11 @@ SELECTORES_WEBRELATORIA = {
     "panel_criterios": _env("WR_PANEL", "Criterios de búsqueda"),
     # El campo «Tema» es el único con id estable (searchForm:temaInput); los demás
     # llevan ids generados por JSF que cambian entre despliegues del portal.
-    "campo_texto": _env("WR_CAMPO_TEXTO", "input[id$=':temaInput']"),
+    # «Texto Completo» busca en el cuerpo de la providencia; «Tema» es un índice
+    # controlado. El campo de texto completo se localiza por su rótulo porque su id
+    # es generado; si no aparece, se usa temaInput.
+    "campo_texto": _env("WR_CAMPO_TEXTO", "xpath=//*[normalize-space(text())='Texto Completo']/following::input[1]"),
+    "campo_texto_respaldo": _env("WR_CAMPO_TEXTO_RESPALDO", "input[id$=':temaInput']"),
     "boton_buscar": _env("WR_BOTON_BUSCAR", "button[id^='searchForm']:has-text('Buscar'):visible, button:has-text('Buscar'):visible"),
     "filas_resultado": _env("WR_FILAS", "tbody[id$='jurisTable_data'] tr, table[id$='jurisTable'] tbody tr, .ui-datatable-data tr"),
     "enlace_documento": _env("WR_ENLACE", "a[href*='.pdf'], a[href*='Documento'], a[id*='descarg'], a"),

@@ -3,9 +3,8 @@ from ..modelos import Corporacion
 from ..navegador import Navegador
 from ..portales import PORTALES
 from .base import Adaptador
-from .consejo_estado import ConsejoEstado
 from .corte_constitucional import CorteConstitucional
-from .webrelatoria import CNDJ, CorteSuprema
+from .webrelatoria import CNDJ, ConsejoEstado, CorteSuprema
 
 
 def construir_adaptadores(http: ClienteHTTP, nav: Navegador) -> dict[Corporacion, Adaptador]:

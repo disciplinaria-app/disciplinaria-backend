@@ -37,6 +37,8 @@ class WebRelatoria(Adaptador):
             async with self.nav.pagina() as p:
                 r = await p.goto(url, wait_until="domcontentloaded")
                 campo = p.locator(SEL["campo_texto"]).first
+                if await campo.count() == 0:
+                    campo = p.locator(SEL["campo_texto_respaldo"]).first
                 if not await campo.is_visible():
                     try:  # el panel «Criterios de búsqueda» está plegado
                         await p.get_by_text(SEL["panel_criterios"], exact=False).first.click(timeout=5000)
@@ -113,3 +115,7 @@ class CNDJ(WebRelatoria):
 
 class CorteSuprema(WebRelatoria):
     corporacion = Corporacion.CORTE_SUPREMA
+
+
+class ConsejoEstado(WebRelatoria):
+    corporacion = Corporacion.CONSEJO_ESTADO

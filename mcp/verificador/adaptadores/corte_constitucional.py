@@ -65,14 +65,21 @@ class CorteConstitucional(Adaptador):
                 resp.estado = "parcial"
                 resp.detalle = "el buscador exige navegador y Playwright no está disponible"
             return [], resp
-        consulta_limpia = consulta.strip()
-        es_identificador = bool(_RE_CC.fullmatch(consulta_limpia.strip('"')))
+        consulta_limpia = consulta.strip().strip('"')
+        es_identificador = bool(_RE_CC.fullmatch(consulta_limpia))
+        if not es_identificador:
+            # El buscador trata la consulta como frase exacta y recomienda frases
+            # cortas: se conservan a lo sumo las tres palabras más largas, en su orden.
+            palabras = [w for w in consulta_limpia.split() if len(w) > 3]
+            if len(palabras) > 3:
+                elegidas = sorted(sorted(palabras, key=len, reverse=True)[:3], key=palabras.index)
+                consulta_limpia = " ".join(elegidas)
         modo = SEL["modo_numero"] if es_identificador else SEL["modo_texto"]
         try:
             async with self.nav.pagina() as p:
                 r = await p.goto(url, wait_until="domcontentloaded")
                 await p.locator(SEL["selector_modo"]).first.select_option(label=modo)
-                await p.locator(SEL["campo_texto"]).first.fill(consulta_limpia.strip('"') if es_identificador else consulta_limpia)
+                await p.locator(SEL["campo_texto"]).first.fill(consulta_limpia)
                 if desde:
                     try:
                         await p.locator("#datePicker1").fill(f"{desde}-01-01")
