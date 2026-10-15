@@ -136,7 +136,7 @@ class Navegador:
                             .filter(a => !re || re.test(a.href) || re.test(a.texto)).slice(0,80);
                         const iframes = [...document.querySelectorAll('iframe')].map(f => f.src).slice(0,10);
                         return { titulo: document.title, campos, botones, enlaces, iframes,
-                                 texto_inicio: (document.body.innerText||'').replace(/\s+/g,' ').slice(0,600),
+                                 texto_inicio: (document.body.innerText||'').replace(/[ \t\r\n]+/g,' ').slice(0,600),
                                  caracteres_texto: (document.body.innerText||'').length };
                     }""", patron_enlaces)
                 datos.update({"estado": "ok", "url_inicial": url, "url_final": p.url,
