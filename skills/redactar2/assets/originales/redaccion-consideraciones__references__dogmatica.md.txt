@@ -1,0 +1,62 @@
+# Repertorio dogmático por materia
+
+Guía de las categorías que deben desplegarse —no solo mencionarse— para que la argumentación alcance profundidad de providencia de alta corte. No es un formulario que se rellena; es el andamiaje conceptual que la redacción debe habitar y desarrollar según el caso.
+
+## Tabla de contenido
+1. Tutela y derechos fundamentales
+2. Disciplinario (L.1123 / L.1952)
+3. Penal (L.906)
+4. Manejo técnico de la jurisprudencia
+
+---
+
+## 1. Tutela y derechos fundamentales
+
+**Juicio de procedibilidad** (autónomo y previo al fondo):
+- Legitimación en la causa por activa y por pasiva.
+- Subsidiariedad: idoneidad y eficacia del medio ordinario en el caso concreto; perjuicio irremediable (inminencia, gravedad, urgencia, impostergabilidad) como excepción; tutela como mecanismo transitorio.
+- Inmediatez: razonabilidad y proporcionalidad del término; causas que justifican la demora; permanencia o actualidad de la afectación.
+
+**Juicio de fondo**:
+- Identificación del derecho fundamental y, cuando proceda, de su faceta específica (p. ej., debido proceso administrativo en su garantía de decisión de fondo dentro de un plazo razonable; petición en su núcleo de respuesta de fondo, clara, congruente y oportuna).
+- Subregla constitucional aplicable, con su ratio: enunciarla, fundarla en la línea jurisprudencial y aplicarla.
+- Test pertinente cuando la subregla lo exige (proporcionalidad, igualdad, etc.), desarrollando sus pasos, no nombrándolo.
+- Remedio constitucional: órdenes simples o complejas, su alcance y límites según la competencia del juez.
+
+**Distinción de resultados** (capital): subsidiariedad/inmediatez incumplidas → improcedencia; ausencia de vulneración acreditada → negar el amparo. No fundir.
+
+---
+
+## 2. Disciplinario
+
+### 2.1 Abogados — Ley 1123 de 2007
+La L.1123 tutela DEBERES PROFESIONALES del abogado (arts. 28 y ss.), no "bienes jurídicos protegidos" (categoría del derecho penal, ajena a este régimen). El eje dogmático central es el **deber profesional infringido**. Categorías a desplegar como momentos analíticos diferenciados:
+- **Tipicidad**: adecuación de la conducta a la descripción de la falta; verbo rector; sujeto; identificación del deber profesional comprometido (deber de lealtad, de diligencia, de honradez, etc.).
+- **Antijuridicidad** (art. 4): afectación injustificada del deber profesional, no mera infracción formal; ausencia de causal de justificación.
+- **Culpabilidad**: dolo o culpa; exigibilidad de otra conducta; ausencia de causales excluyentes.
+- Valoración probatoria conforme a la sana crítica; carga de la prueba.
+- Dosificación de la sanción: criterios de graduación, proporcionalidad.
+
+PROHIBIDO en este régimen: "bien jurídico", "bien jurídico-funcional" e "ilicitud sustancial" (esta última pertenece exclusivamente a la L.1952/2019). Léxico correcto: deber profesional, deber infringido, deber vulnerado, o la categoría específica del deber. Usar exclusivamente la dogmática y el léxico de la L.1123; no transferir categorías de la L.1952 ni del derecho penal.
+
+### 2.2 Funcionarios y empleados — Ley 1952 de 2019
+Misma arquitectura analítica con la dogmática del CGD: falta disciplinaria, ilicitud sustancial (afectación del deber funcional), culpabilidad, causales de exclusión de responsabilidad. No mezclar con terminología de abogados.
+
+---
+
+## 3. Penal — Ley 906 de 2004
+- **Conducta punible**: tipicidad (objetiva y subjetiva), antijuridicidad (formal y material, lesividad), culpabilidad.
+- **Estándar de conocimiento**: convencimiento más allá de toda duda razonable (art. 381); su aplicación a la valoración probatoria.
+- Principio de limitación en segunda instancia: el ad quem se ciñe a lo impugnado.
+- Dosificación punitiva: cuartos, circunstancias de mayor y menor punibilidad, principios de necesidad y proporcionalidad de la pena.
+
+---
+
+## 4. Manejo técnico de la jurisprudencia
+
+La cita no es ornamento de autoridad. El estándar exige:
+- Extraer la **ratio decidendi** de la sentencia, no solo su número.
+- Mostrar la **aplicabilidad**: por qué los hechos del precedente y los del caso comparten el supuesto relevante.
+- Cuando convenga, **distinguir** (technique of distinguishing): explicar por qué un precedente aparentemente aplicable no gobierna el caso.
+- Articular **líneas jurisprudenciales** (sentencia fundadora, hitos, estado actual) cuando la tesis lo amerite, en lugar de citas sueltas.
+- Nunca citar salvamentos de voto como autoridad vinculante.

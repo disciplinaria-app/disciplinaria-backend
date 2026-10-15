@@ -1,0 +1,188 @@
+---
+name: lectura-juridica
+description: Corrección de estilo editorial perfeccionista para textos jurídicos (providencias judiciales) con flujo secuencial automático. Use esta skill cuando el usuario pida revisar redacción, corregir estilo, hacer "lectura jurídica", pulir párrafos de providencias, o mejorar la calidad editorial de textos judiciales. También cuando mencione corrección gramatical, sintáctica, o perfeccionamiento de conjugación verbal en documentos jurídicos. Funciona en DOS FASES: (1) corrección de estilo automática, (2) mejora de fondo opcional (coherencia y reorganización del texto existente). Ajusta el tiempo verbal por sección (pasado para antecedentes procesales, presente para análisis jurídico, o el que indique el usuario), elimina gerundios excesivos, modera el "se" impersonal, reduce verbos en "-ó", y preserva intactos citas, nombres, radicados, fechas y cifras. Siempre úsela para corrección de estilo en providencias disciplinarias, tutelas, habeas corpus o cualquier texto judicial.
+---
+
+# Lectura Jurídica — Corrección Editorial Secuencial
+
+Skill especializada en corrección de estilo editorial perfeccionista para textos jurídicos (providencias judiciales) con flujo secuencial automático de dos fases. Corrige la **forma** del texto existente; no construye argumentación nueva ni investiga jurisprudencia (eso corresponde a la skill `redaccion-consideraciones`).
+
+## Alineación con el Protocolo Despacho LM
+
+Esta skill opera en coordinación con el Protocolo Despacho LM: la skill aporta el procedimiento de corrección; el protocolo aporta los controles que prevalecen siempre. Rigen aquí sin excepción: la jerarquía de fuentes de verdad (el texto entregado es la fuente; sus datos no se alteran ni se reconstruyen), el rigor dogmático por régimen, el lenguaje calibrado y el reporte sin maquillaje (si un pasaje no admite corrección segura, se dice; no se corrige a ciegas).
+
+## Flujo de trabajo secuencial
+
+### **FASE 1 — Corrección de estilo** (siempre se ejecuta)
+Corrección editorial perfeccionista: gramática, sintaxis, estilo y fluidez.
+
+### **FASE 2 — Mejora de fondo** (opcional, se ofrece automáticamente)
+Después de mostrar la corrección de estilo, SIEMPRE preguntar:
+
+> "¿Deseas que analice la coherencia jurídica y argumentativa del texto para sugerir mejoras de fondo o reorganización de ideas?"
+
+- Si responde **SÍ** → Ejecutar Fase 2.
+- Si responde **NO** → Terminar.
+
+---
+
+## FASE 1: Corrección de estilo editorial
+
+### Tiempo verbal (regla por defecto y excepción)
+- **Regla por defecto (si el usuario no indica otra cosa)**: aplicar la convención judicial por sección — **pasado** para antecedentes procesales y actuaciones ya cumplidas; **presente** para el análisis jurídico, las normas y las decisiones. Declarar en los ajustes qué convención se aplicó.
+- **Si el usuario especifica un tiempo** (PRESENTE o PASADO para todo el fragmento), su instrucción prevalece sin discusión.
+- **Preguntar solo si hay ambigüedad real** (p. ej., un fragmento mixto donde no sea claro qué es antecedente y qué es análisis, y el usuario no haya indicado tiempo).
+
+### Criterios de corrección (Fase 1)
+
+1. **Tiempo y persona narrativa**
+   - Ajustar la conjugación verbal conforme a la regla anterior.
+   - Mantener tercera persona impersonal en toda la narración.
+
+2. **Gramática y sintaxis**
+   - Corregir errores gramaticales, ortográficos y de sintaxis.
+   - Perfeccionar la concordancia (género, número, tiempo verbal).
+   - Asegurar puntuación adecuada y precisa.
+
+3. **Fluidez y linealidad**
+   - Redacción fluida y lineal, sin cortes innecesarios.
+   - Detectar y eliminar repeticiones léxicas: palabras exactas repetidas, raíces léxicas repetidas, pronombres y verbos reiterados.
+   - Limitar gerundios y adverbios en "-mente".
+   - Reducir el exceso de puntos (privilegiar comas, punto y coma, conectores funcionales).
+
+4. **Estilo jurídico**
+   - Sustituir el abuso del "se" impersonal por giros activos, nominalizaciones o expresiones técnicas.
+   - Moderar los verbos terminados en "-ó" (fijó, estableció, remitió) alternando con expresiones sustantivadas (la fijación, la determinación, la remisión).
+
+5. **GUARDA DOGMÁTICA en la sustitución léxica (no negociable)**
+   Al reemplazar repeticiones con sinónimos, los **términos dogmáticos NO son sinónimos intercambiables**:
+   - En asuntos de la **L.1123/2007** (abogados): "deber profesional" nunca se sustituye por "deber funcional"; jamás se introducen "ilicitud sustancial" ni "bien jurídico" como variantes léxicas. El léxico permitido es el del régimen: deber profesional, deber infringido, deber vulnerado, o el deber específico (lealtad, diligencia, honradez).
+   - En asuntos de la **L.1952/2019**: "ilicitud sustancial" y "deber funcional" se conservan como categorías propias; no se reemplazan por equivalentes aparentes.
+   - En tutela: "improcedencia" y "negar el amparo" designan resultados jurídicamente distintos; nunca se intercambian ni se funden por elegancia estilística.
+   - Regla general: la variación léxica se aplica al lenguaje común del texto; el término dogmático se repite las veces que haga falta. La precisión prevalece sobre la elegancia.
+
+6. **Preservación e integridad de datos (no negociable)**
+   - **Conservar sin modificación alguna** el texto entre comillas (citas textuales), las notas al pie y las referencias de citación.
+   - **Nombres, radicados, fechas, cifras, cuantías y calidades procesales se transcriben idénticos** al original; ninguna operación de estilo puede alterarlos, abreviarlos ni "armonizarlos".
+   - **Preservar TODO el contenido** del texto original: ninguna información, dato o fragmento se omite por la reescritura.
+   - Preservar el formato estructural del documento (numeración de párrafos de la providencia, negritas de encabezados, sangrías de citas).
+
+7. **Coherencia y precisión**
+   - Incorporar las palabras o expresiones faltantes para dar coherencia y continuidad narrativa.
+   - Mantener el significado jurídico original: la corrección de estilo jamás cambia el sentido de una afirmación.
+
+### Verificación de integridad (obligatoria antes de entregar)
+Terminada la corrección, ejecutar en silencio una pasada de contraste entre el original y la versión corregida, confirmando: (a) que todos los nombres, radicados, fechas y cifras están presentes e idénticos; (b) que las citas entre comillas y las notas al pie quedaron intactas; (c) que no se perdió ningún contenido; (d) que ninguna sustitución léxica tocó un término dogmático; (e) que no se introdujeron errores nuevos de concordancia o sentido. Si algún punto falla, corregir antes de entregar.
+
+### Consistencia entre bloques
+Cuando el documento se corrige por partes en turnos sucesivos, mantener las mismas decisiones editoriales en todos los bloques: idénticas sustituciones léxicas para los mismos términos, misma convención de tiempo verbal por sección, mismo tratamiento de fórmulas recurrentes. Ante un documento largo, ofrecer el trabajo por bloques en orden.
+
+### Formato de respuesta (Fase 1)
+
+```
+**Versión corregida:**
+
+[Texto corregido con todos los ajustes aplicados]
+
+---
+
+**Ajustes realizados:**
+
+1. **[Tipo de ajuste]**: [Explicación didáctica del cambio]
+2. **[Tipo de ajuste]**: [Explicación didáctica del cambio]
+[...]
+
+---
+
+¿Deseas que analice la coherencia jurídica y argumentativa del texto
+para sugerir mejoras de fondo o reorganización de ideas?
+```
+
+Cuando el trabajo se realice dentro de Word y el usuario pida aplicar los cambios, insertar la versión corregida directamente en el documento, además de reportar los ajustes.
+
+### Tipos de ajustes comunes (Fase 1)
+Tiempo verbal · Puntuación · Concordancia gramatical · Corrección ortográfica · Precisión léxica · Eliminación de repeticiones · Supresión de gerundios · Fluidez sintáctica · Economía expresiva · Giros activos · Nominalización.
+
+---
+
+## FASE 2: Mejora de fondo (solo si el usuario acepta)
+
+### Alcance y frontera
+La Fase 2 mejora la coherencia, la progresión lógica y la organización **del texto existente**. NO construye argumentación nueva, NO inserta jurisprudencia ni normas, y NO investiga. Si el análisis revela que el texto necesita fundamento nuevo (una subregla, una cita, un desarrollo normativo), la skill **señala el vacío con precisión y recomienda ejecutar la skill `redaccion-consideraciones`**, que verifica en fuentes oficiales antes de citar. Ninguna referencia normativa o jurisprudencial concreta se agrega desde la memoria: si resulta imprescindible mencionar un soporte no verificado, se marca `[VERIFICAR: …]`.
+
+### Criterios de mejora (Fase 2)
+
+1. **Coherencia jurídica**: verificar la solidez de la argumentación existente; identificar vacíos, saltos o debilidades, señalándolos con precisión (qué falta y dónde).
+2. **Coherencia argumentativa**: asegurar la progresión lógica de ideas; eliminar redundancias y contradicciones; fortalecer la estructura premisa → desarrollo → conclusión; detectar circularidad y peticiones de principio.
+3. **Perfeccionamiento de la redacción**: elevar la calidad técnico-jurídica del lenguaje; precisar conceptos vagos; mejorar la densidad sin sacrificar claridad, respetando la guarda dogmática de la Fase 1.
+4. **Reorganización de ideas** (si es necesaria): reordenar elementos para mayor fuerza argumentativa; proponer nueva estructura si la actual es deficiente, explicando por qué mejora el texto.
+
+### Formato de respuesta (Fase 2)
+
+```
+**Versión mejorada (coherencia y reorganización):**
+
+[Texto reorganizado y perfeccionado]
+
+---
+
+**Mejoras de fondo aplicadas:**
+
+1. **Coherencia jurídica**: [Explicación]
+2. **Coherencia argumentativa**: [Explicación]
+3. **Reorganización de ideas**: [Explicación]
+4. **Perfeccionamiento técnico**: [Explicación]
+
+---
+
+**Vacíos que requieren construcción de fondo** (si los hay):
+
+[Qué falta, dónde, y recomendación de trabajarlo con redaccion-consideraciones]
+
+---
+
+**Justificación de la reorganización:**
+
+[Por qué la nueva versión es superior a la corregida en Fase 1]
+```
+
+---
+
+## Principios editoriales aplicados
+
+Este skill aplica automáticamente los principios del **PROTOCOLO-LM ESTILO** para providencias judiciales:
+
+1. Tercera persona e impersonal.
+2. Concordancia precisa, sin repeticiones léxicas.
+3. Redacción sobria y objetiva.
+4. Puntuación contenida (privilegiar comas y punto y coma).
+5. Léxico técnico-jurídico preciso, ajustado a la dogmática del régimen aplicable.
+6. Coherencia argumentativa.
+7. Antecedentes como exposición objetiva.
+8. Economía expresiva sin pérdida de precisión.
+9. Enfoque neutral en divergencias.
+10. Conclusiones como consecuencia lógica.
+
+---
+
+## Instrucciones críticas de ejecución
+
+### SIEMPRE:
+- Ejecutar automáticamente la Fase 1 y ofrecer la Fase 2.
+- Aplicar la convención de tiempo verbal por sección si el usuario no indica otra; su instrucción expresa prevalece.
+- Preservar TODO el contenido original: información, datos, nombres, radicados, fechas, cifras y fragmentos.
+- Preservar intactos el texto entre comillas, las notas al pie y el formato estructural.
+- Aplicar la guarda dogmática en toda sustitución léxica (los términos dogmáticos no son sinónimos intercambiables).
+- Ejecutar la verificación de integridad antes de entregar.
+- Mantener la consistencia editorial entre bloques de un mismo documento.
+- Explicar cada ajuste de manera didáctica.
+- Mantener el significado jurídico original.
+
+### NUNCA:
+- Alterar, abreviar o "armonizar" nombres, radicados, fechas o cifras por razones de estilo.
+- Sustituir términos dogmáticos por variantes de otro régimen (ni "ilicitud sustancial"/"bien jurídico" en L.1123, ni intercambiar improcedencia con negación del amparo).
+- Agregar normas o jurisprudencia desde la memoria; los soportes nuevos se construyen con `redaccion-consideraciones` o se marcan `[VERIFICAR: …]`.
+- Generar tabla de 6 columnas (eso es PROTOCOLO-LM Fase 3).
+- Hacer investigación jurisprudencial (solo corrección y mejora del texto existente).
+- Saltar a la Fase 2 sin mostrar la Fase 1, ni aplicarla sin consentimiento del usuario.
+- Cambiar el sentido jurídico de una afirmación por vía de la corrección de estilo.

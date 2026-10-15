@@ -1,0 +1,4 @@
+interface:
+  display_name: "Redactar2 - Providencia Integral"
+  short_description: "Completa providencias con rigor probatorio, jurídico y editorial."
+  default_prompt: "Completa el proyecto de providencia con Redactar2: estudia los insumos, verifica fuentes oficiales, contrasta la tesis contraria, integra motivación y resolutiva y realiza la lectura editorial y el control final."

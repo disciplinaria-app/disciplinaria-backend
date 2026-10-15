@@ -1,0 +1,49 @@
+test_01_fixture_structure_only (test_auditor.AuditTests.test_01_fixture_structure_only) ... ok
+test_02_empty_input_fails (test_auditor.AuditTests.test_02_empty_input_fails) ... ok
+test_03_non_object_fails (test_auditor.AuditTests.test_03_non_object_fails) ... ok
+test_04_missing_expected_argument (test_auditor.AuditTests.test_04_missing_expected_argument) ... ok
+test_05_duplicate_id (test_auditor.AuditTests.test_05_duplicate_id) ... ok
+test_06_incomplete_essential (test_auditor.AuditTests.test_06_incomplete_essential) ... ok
+test_07_incomplete_but_treated_with_reason (test_auditor.AuditTests.test_07_incomplete_but_treated_with_reason) ... ok
+test_08_declared_complete_with_pending_ranges (test_auditor.AuditTests.test_08_declared_complete_with_pending_ranges) ... ok
+test_09_fact_without_support (test_auditor.AuditTests.test_09_fact_without_support) ... ok
+test_10_allegation_as_proven_fact (test_auditor.AuditTests.test_10_allegation_as_proven_fact) ... ok
+test_11_self_supporting_inference (test_auditor.AuditTests.test_11_self_supporting_inference) ... ok
+test_12_indirect_inference_cycle (test_auditor.AuditTests.test_12_indirect_inference_cycle) ... ok
+test_13_pending_normative_version (test_auditor.AuditTests.test_13_pending_normative_version) ... ok
+test_14_metadata_conflict_despite_global_confirmed (test_auditor.AuditTests.test_14_metadata_conflict_despite_global_confirmed) ... ok
+test_15_identity_without_ratio (test_auditor.AuditTests.test_15_identity_without_ratio) ... ok
+test_16_dissent_as_majority (test_auditor.AuditTests.test_16_dissent_as_majority) ... ok
+test_17_party_argument_as_majority (test_auditor.AuditTests.test_17_party_argument_as_majority) ... ok
+test_18_llm_origin_is_not_source (test_auditor.AuditTests.test_18_llm_origin_is_not_source) ... ok
+test_19_secondary_origin_is_not_official (test_auditor.AuditTests.test_19_secondary_origin_is_not_official) ... ok
+test_20_no_update_record (test_auditor.AuditTests.test_20_no_update_record) ... ok
+test_21_unanswered_argument (test_auditor.AuditTests.test_21_unanswered_argument) ... ok
+test_22_absorption_in_itself (test_auditor.AuditTests.test_22_absorption_in_itself) ... ok
+test_23_decision_not_reciprocal (test_auditor.AuditTests.test_23_decision_not_reciprocal) ... ok
+test_24_order_without_recipient_and_deadline (test_auditor.AuditTests.test_24_order_without_recipient_and_deadline) ... ok
+test_25_unfinished_section (test_auditor.AuditTests.test_25_unfinished_section) ... ok
+test_26_literal_changed (test_auditor.AuditTests.test_26_literal_changed) ... ok
+test_27_protection_not_in_original (test_auditor.AuditTests.test_27_protection_not_in_original) ... ok
+test_28_no_original_for_protections (test_auditor.AuditTests.test_28_no_original_for_protections) ... ok
+test_29_pending_marker (test_auditor.AuditTests.test_29_pending_marker) ... ok
+test_30_open_substantive_finding (test_auditor.AuditTests.test_30_open_substantive_finding) ... ok
+test_31_claimed_edit_without_actual_write (test_auditor.AuditTests.test_31_claimed_edit_without_actual_write) ... ok
+test_32_changed_final_version (test_auditor.AuditTests.test_32_changed_final_version) ... ok
+test_33_no_final_text (test_auditor.AuditTests.test_33_no_final_text) ... ok
+test_34_empty_gate_evidence (test_auditor.AuditTests.test_34_empty_gate_evidence) ... ok
+test_35_broken_fact_reference (test_auditor.AuditTests.test_35_broken_fact_reference) ... ok
+test_36_silent_substantive_correction (test_auditor.AuditTests.test_36_silent_substantive_correction) ... ok
+test_37_future_date (test_auditor.AuditTests.test_37_future_date) ... ok
+test_38_cli_valid (test_auditor.AuditTests.test_38_cli_valid) ... ok
+test_39_cli_does_not_overwrite_input (test_auditor.AuditTests.test_39_cli_does_not_overwrite_input) ... ok
+test_40_cli_invalid_json (test_auditor.AuditTests.test_40_cli_invalid_json) ... ok
+test_41_essential_metadata_cannot_be_not_applicable (test_auditor.AuditTests.test_41_essential_metadata_cannot_be_not_applicable) ... ok
+test_42_justified_optional_metadata (test_auditor.AuditTests.test_42_justified_optional_metadata) ... ok
+test_43_indirect_absorption_cycle (test_auditor.AuditTests.test_43_indirect_absorption_cycle) ... ok
+test_44_absorption_reaches_answer (test_auditor.AuditTests.test_44_absorption_reaches_answer) ... ok
+
+----------------------------------------------------------------------
+Ran 44 tests in 2.616s
+
+OK

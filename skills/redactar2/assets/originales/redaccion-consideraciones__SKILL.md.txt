@@ -1,0 +1,133 @@
+---
+name: redaccion-consideraciones
+description: Completa y redacta las consideraciones de providencias judiciales colombianas (tutela, habeas corpus, disciplinarias L.1123/L.1952, penales L.906). Use esta skill SIEMPRE que el usuario entregue una providencia o documento de Word incompleto y pida terminarlo, completar o estructurar las consideraciones, redactar el caso concreto o la subsunción, ajustar el problema jurídico, o verificar, insertar o actualizar jurisprudencia. Identifica el tipo de acto y la norma, constata el tema con preguntas en español, estructura (problema jurídico → norma → jurisprudencia → caso concreto → decisión), verifica toda cita en la web consultando los portales oficiales de las Cortes, en dos capas (línea consolidada + actualización 2022 en adelante, que complementa y nunca sustituye la jurisprudencia fundadora), e inserta los párrafos directamente en el documento. NO hace corrección de estilo editorial (eso es lectura-juridica); construye el fondo argumentativo.
+---
+
+# Redacción de Consideraciones Judiciales
+
+Skill para completar las consideraciones de providencias judiciales colombianas: estructurar la lógica argumentativa, verificar la jurisprudencia aplicable en dos capas (consolidada + actualizada) e insertar los párrafos directamente en el documento, listos para integrarse a la providencia.
+
+Esta skill construye **contenido de fondo**. La corrección de estilo editorial corresponde a la skill `lectura-juridica` y se ofrece al final como paso posterior, no se ejecuta aquí.
+
+## Alineación con el Protocolo Despacho LM
+
+Esta skill opera en coordinación con el Protocolo Despacho LM (instrucciones del proyecto): la skill aporta el procedimiento específico de la tarea; el protocolo aporta el motor de razonamiento, la verificación y los controles de calidad, que prevalecen siempre. En particular, rigen aquí sin excepción: la jerarquía de fuentes de verdad (expediente > instrucción del chat > protocolo > skill/memoria, con transcripción literal de nombres, radicados y fechas del documento fuente), la deliberación proporcional (no se redacta mientras el problema jurídico no esté completamente formulado), la tesis contraria de acero, la cadena de verificación, el lenguaje calibrado y el premortem, según se detallan en las fases siguientes.
+
+## Principio rector: nunca inventar
+
+La regla absoluta es **no fabricar jurisprudencia, normas, radicados, ponentes ni fechas**. Una providencia que cita una sentencia inexistente o un radicado errado expone al despacho. Por eso:
+
+- Toda cita jurisprudencial debe verificarse mediante búsqueda web antes de insertarse.
+- Si una sentencia no se logra verificar, se marca con `[VERIFICAR: …]` y se explica al usuario qué falta confirmar; nunca se inserta como si estuviera confirmada.
+- Los salvamentos de voto carecen de fuerza vinculante y valor precedencial; no se citan como autoridad salvo que el usuario los invoque expresamente como contraste.
+
+## Flujo de trabajo
+
+El trabajo procede en cuatro fases. No se salta a redactar sin antes leer el documento, constatar el tema y confirmar los puntos a trabajar con el usuario.
+
+### Fase 0 — Lectura y diagnóstico
+
+1. Leer íntegramente el documento entregado (el usuario lo "suelta" para que se trabaje sobre él).
+2. Identificar:
+   - **Tipo de acto**: tutela, habeas corpus, providencia disciplinaria (L.1123 abogados / L.1952 funcionarios), o penal (L.906).
+   - **Norma aplicable** y régimen: D.2591/1991 (tutela), L.1095/2006 (HC), L.1123/2007, L.1952/2019, L.906/2004.
+   - **Instancia y etapa procesal** (segunda instancia, desacato, etc.).
+   - **Qué está completo y qué falta**: normalmente faltan o están incompletas las consideraciones, el análisis del caso concreto, o la decisión.
+3. Constatar el problema jurídico: ¿está planteado? ¿está bien planteado? Revisar el archivo `references/estructura-providencias.md` para la plantilla del tipo de acto correspondiente.
+4. Inventariar la jurisprudencia que el documento **ya cita**: esa jurisprudencia se conserva (salvo error verificado) y sirve de base para la capa de actualización de la Fase 2. La skill complementa lo existente; no lo reemplaza.
+
+### Fase 1 — Constatación y preguntas (en español)
+
+Antes de redactar, confirmar con el usuario. Formular las preguntas en español, agrupadas y concretas. Cubrir al menos:
+
+- **Confirmación del tema**: "El documento versa sobre [X]. ¿Es correcto?"
+- **Problema jurídico**: si parece errado o ausente, proponer una reformulación y preguntar si se acepta. No reescribir el problema jurídico sin avisar.
+- **Visión del caso (eje central)**: pedir al usuario que exprese su lectura preliminar de la decisión, en sus propios términos. El usuario suele tener una intuición del sentido y de la razón que la sostiene, a veces formulada en lenguaje llano. Ejemplo real de cómo puede expresarla: *"Veo que sí siguió el procedimiento, pero el plazo razonable se demoró; tutelo por considerar que el accionante necesita una resolución pronta."* Esa visión es el insumo más valioso: contiene el sentido de la decisión y su fundamento germinal.
+  - La tarea de la skill es **traducir esa visión a la arquitectura jurídica formal**: identificar qué derecho fundamental está comprometido (en el ejemplo, debido proceso administrativo y/o petición en su faceta de resolución de fondo en plazo razonable), qué subregla constitucional la respalda, qué tipo de decisión técnica corresponde (conceder por mora administrativa pese a la regularidad formal del trámite), y qué órdenes materializan el remedio.
+  - Si la visión del usuario, llevada a su forma técnica, choca con una categoría dogmática (p. ej., confunde improcedencia con negación, o el remedio propuesto excede la competencia), **advertirlo con precisión y proponer el encuadre correcto**, sin imponerlo: explicar el reparo jurídico y confirmar con el usuario.
+  - Devolver al usuario el encuadre propuesto antes de redactar: "Su visión se traduce jurídicamente en [tesis técnica], sustentada en [subregla], con decisión de [sentido]. ¿Procedo sobre esta base?"
+- **Puntos o ejes a trabajar**: ¿qué secciones concretas debe completar la skill?
+- **Profundidad jurisprudencial**: ¿cuántos ejes temáticos y qué tesis se quieren respaldar?
+
+Distinción que nunca debe confundirse al traducir la visión a la decisión en tutela: el incumplimiento de la subsidiariedad conduce a declarar **improcedente** la acción (juicio de procedibilidad); la ausencia de vulneración real de un derecho fundamental conduce a **negar el amparo** (juicio de fondo). Son resultados jurídicamente distintos.
+
+### Fase 2 — Verificación e investigación jurisprudencial en dos capas
+
+Para cada tesis que requiera respaldo, la investigación se ejecuta en **dos capas obligatorias**:
+
+**Capa 1 — Línea consolidada (fundacional).** Identificar la sentencia hito o fundadora de la subregla y la línea jurisprudencial que la desarrolló. Esta capa se conserva siempre: la jurisprudencia clásica es el cimiento de la argumentación y **jamás se elimina ni se sustituye por el solo hecho de ser antigua**. Si el documento ya la cita, se respeta y se verifica.
+
+**Capa 2 — Actualización (2022 en adelante).** Para la misma subregla, ejecutar búsquedas dirigidas de pronunciamientos recientes —de 2022 hasta la fecha actual— incluyendo el año en la consulta (p. ej., "plazo razonable mora administrativa Corte Constitucional 2024", "ilicitud sustancial unificación 2025"). Priorizar sentencias de unificación (SU), de Sala Plena y providencias de la CNDJ recientes. El hallazgo reciente se clasifica en una de tres categorías, y esa clasificación determina cómo se redacta:
+- **Confirma** la subregla → se cita en cadena con la fundadora, mostrando la continuidad de la línea ("subregla reiterada recientemente en…").
+- **Precisa o desarrolla** la subregla (añade matices, subfacetas, criterios de aplicación) → se articula la evolución: la sentencia fundadora aporta la ratio original y la reciente el estado actual del concepto; ambas se citan y el texto muestra el tránsito.
+- **Modifica o supera** la subregla (cambio de precedente declarado) → se advierte expresamente al usuario ANTES de redactar, se cita la línea vigente como fundamento de la decisión y la anterior solo como contexto de la evolución, nunca como ratio actual.
+
+Reglas de la doble capa: la actualización **complementa, nunca desplaza**; una sentencia reciente no se presenta como cambio de línea sin verificar que la propia corporación lo haya declarado así; si no se halla pronunciamiento reciente sobre la subregla, se informa al usuario ("línea sin variación conocida desde [año de la última verificada]") en lugar de forzar una cita reciente irrelevante.
+
+Para toda cita, de cualquiera de las dos capas:
+
+1. **Localizar en web** incluyendo el nombre de la corporación en la consulta, para que entre los resultados aparezca el enlace del portal oficial (Corte Constitucional, Corte Suprema de Justicia, Consejo de Estado, CNDJ según la materia).
+2. **Consultar directamente la página oficial**: abrir el enlace de la relatoría o del texto de la providencia y leer la fuente primaria. Los cinco datos de la cita (corporación, sala o sección, magistrado ponente, número de radicado/sentencia y fecha) se confirman contra la página oficial, no contra el resumen del buscador; y la ratio decidendi que se invoque se extrae de esa lectura, nunca de la paráfrasis de una fuente secundaria. Confirmar también la vigencia de la norma citada.
+3. Si la verificación es completa → la cita se puede insertar y referenciar a pie de página.
+4. Si la verificación es parcial o nula → marcar `[VERIFICAR: falta confirmar ponente/fecha/radicado de …]` y reportarlo al usuario. Nunca presentar como confirmada una cita que no se pudo corroborar.
+5. No citar salvamentos de voto como autoridad.
+
+Consultar `references/verificacion-jurisprudencial.md` para el protocolo detallado de búsqueda, la capa de actualización y los criterios de fuente fiable.
+
+### Fase 3 — Razonamiento, redacción e inserción directa
+
+Antes de redactar, ejecutar internamente el motor de razonamiento del Protocolo Despacho LM (sin narrarlo): formular el problema jurídico con precisión, descomponerlo si admite subproblemas (procedibilidad y fondo; tipicidad, antijuridicidad y culpabilidad), y **construir la tesis contraria de acero** —la que sostendría un buen apoderado de la contraparte o un magistrado disidente— refutándola con norma, jurisprudencia o prueba. Una conclusión que no sobrevive a su mejor objeción no se redacta: se reformula.
+
+Redactar las consideraciones siguiendo la estructura del tipo de acto (ver `references/estructura-providencias.md`) y los principios de redacción del PROTOCOLO-LM (ver `references/protocolo-lm.md`).
+
+**Estándar de profundidad y técnica (no negociable).** El texto debe alcanzar nivel de providencia de alta corte, no de resumen explicativo. Esto exige:
+- **Densidad dogmática**: emplear y desarrollar las categorías propias de la disciplina, no aludirlas de pasada. En tutela, distinguir y articular subreglas, líneas jurisprudenciales y subfacetas del derecho (p. ej., faceta de plazo razonable dentro del debido proceso administrativo). En disciplinario, el marco analítico depende del régimen y no se mezclan: en **L.1123/2007** (abogados) se despliegan tipicidad, antijuridicidad como afectación injustificada del deber profesional (art. 4) y culpabilidad —PROHIBIDO usar "bien jurídico" o "ilicitud sustancial" en este régimen—; en **L.1952/2019** (servidores) se despliegan tipicidad, ilicitud sustancial y culpabilidad como momentos analíticos diferenciados. En penal, los elementos de la conducta punible y el estándar de conocimiento. Consultar `references/dogmatica.md` para el repertorio de categorías por materia.
+- **Lenguaje técnico-jurídico de precisión**: terminología exacta y ajustada a la dogmática aplicable, sin sinónimos impropios ni transferencias conceptuales entre regímenes.
+- **Argumentación, no exposición**: cada subregla se enuncia, se fundamenta en su ratio y se aplica al caso mediante subsunción explícita; no basta enunciar la norma y afirmar la consecuencia. La fuerza del texto reside en la cadena de razones que une premisa normativa, premisa fáctica y conclusión.
+- **Argumentación de acero** (ver `references/argumentacion.md`): arquitectura silogística reconstruible en cada tramo (premisa normativa fundada, premisa fáctica probada, conclusión); manejo técnico del precedente (ratio decidendi —no obiter—, aplicabilidad demostrada, distinguishing expreso de precedentes adversos, carga de transparencia y suficiencia para apartarse); la forma de argumento que el caso exija (a fortiori, a contrario, sistemático, teleológico, interpretación conforme; analogía in malam partem PROHIBIDA en materia sancionatoria); y **motivación completa**: todo argumento relevante de las partes se enuncia en su mejor versión y se responde con norma, jurisprudencia o prueba, con concesión parcial expresa cuando tenga un núcleo válido. Control negativo de falacias antes de entregar: petición de principio, autoridad desnuda, non sequitur, falsa dicotomía, generalización desde un obiter.
+- **Valoración probatoria argumentada**: la sana crítica se despliega —identificando la regla lógica, máxima de experiencia o conocimiento científico que sustenta cada inferencia—, la prueba indiciaria se articula con técnica (hecho indicador probado, inferencia explícita, convergencia) y la prueba de descargo se valora expresamente.
+- **Diálogo con la jurisprudencia en su estado actual**: no citar la sentencia como mero adorno de autoridad, sino extraer su ratio decidendi, mostrar por qué resulta aplicable o distinguible respecto del caso concreto, y reflejar el estado presente del concepto: la línea fundadora articulada con su desarrollo reciente (Fase 2, doble capa), de modo que el texto evidencie que el despacho conoce la evolución del precedente.
+- **Lenguaje calibrado**: lo verificado se afirma; lo probable se declara como tal; lo no verificado se marca o se excluye. Nunca los tres niveles con el mismo tono de certeza.
+
+Estructura argumentativa general:
+**problema jurídico → norma aplicable → desarrollo jurisprudencial (línea consolidada + actualización) → subsunción al caso concreto → conclusión/decisión**, sin razonamiento circular y con subsunción progresiva hecho → derecho → decisión, sin saltos argumentativos.
+
+Antes de insertar, ejecutar la **cadena de verificación** (extraer todas las afirmaciones verificables del borrador —citas, normas y vigencia, datos del expediente— y contrastarlas una por una contra su fuente) y el **premortem** (si esta providencia fuera revocada o anulada, ¿por qué sería? reforzar ese punto).
+
+Inserción:
+- El usuario trabaja con Claude integrado en Word. La entrega es **inserción directa** de los párrafos en el documento, listos para la providencia, sin reformateo posterior.
+- Las citas verificadas van a **pie de página** cuando el documento lo permita; si no, se indican en el formato que el documento ya use.
+- Redactar en prosa continua, sin viñetas ni listas, en tercera persona impersonal, presente para el análisis jurídico y las normas, pasado para los antecedentes procesales.
+- Los nombres, radicados, fechas y calidades procesales se transcriben literalmente del expediente y se mantienen coherentes en todo el texto.
+
+Al terminar, ofrecer el paso siguiente: "¿Deseas que aplique la corrección de estilo editorial (skill `lectura-juridica`) sobre los párrafos insertados?"
+
+## Reglas críticas de ejecución
+
+### SIEMPRE
+- Leer el documento completo antes de cualquier otra acción, e inventariar la jurisprudencia que ya cita.
+- Partir de la visión del caso del usuario y traducirla a su arquitectura jurídica formal antes de redactar.
+- Ejecutar la doble capa jurisprudencial: línea consolidada + actualización (2022 en adelante) para cada subregla, clasificando el hallazgo reciente (confirma / precisa / modifica).
+- Construir y refutar la tesis contraria antes de comprometerse con la conclusión.
+- Alcanzar profundidad dogmática y lenguaje técnico de nivel de alta corte; argumentar, no exponer.
+- Constatar el tema y confirmar con el usuario antes de redactar.
+- Formular las preguntas en español.
+- Verificar toda jurisprudencia por búsqueda web antes de citar, consultando directamente la página oficial de la corporación (relatoría o texto de la providencia) y confirmando los cinco datos contra esa fuente primaria; correr la cadena de verificación completa antes de insertar.
+- Extraer la ratio decidendi de la lectura de la fuente oficial, nunca de la paráfrasis de una fuente secundaria.
+- Responder todo argumento relevante de las partes (motivación completa), con distinguishing expreso de los precedentes adversos y control de falacias antes de entregar.
+- Marcar `[VERIFICAR: …]` cualquier cita no confirmada.
+- Advertir expresamente al usuario cuando la jurisprudencia reciente haya modificado una subregla, antes de redactar sobre ella.
+- Mantener la distinción improcedencia (subsidiariedad) vs. negar amparo (ausencia de vulneración).
+- Insertar los párrafos directamente en el documento, en prosa continua.
+
+### NUNCA
+- Inventar sentencias, radicados, ponentes, fechas o normas.
+- Eliminar o sustituir jurisprudencia fundadora o consolidada por el solo hecho de ser antigua: la actualización complementa, no desplaza.
+- Presentar una sentencia reciente como cambio de línea sin verificar que la corporación lo haya declarado así.
+- Usar "bien jurídico" o "ilicitud sustancial" en asuntos de la L.1123/2007; la ilicitud sustancial pertenece exclusivamente a la L.1952/2019.
+- Citar salvamentos de voto como autoridad vinculante (salvo contraste expreso pedido por el usuario).
+- Reescribir el problema jurídico sin avisar y obtener confirmación.
+- Confundir improcedencia con negación del amparo.
+- Reconstruir de memoria datos del expediente (nombres, radicados, fechas): se transcriben del documento fuente.
+- Hacer corrección de estilo editorial aquí (corresponde a `lectura-juridica`).
+- Usar viñetas o listas en el texto destinado a la providencia.

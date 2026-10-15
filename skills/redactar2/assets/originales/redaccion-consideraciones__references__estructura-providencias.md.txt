@@ -1,0 +1,74 @@
+# Estructuras argumentativas por tipo de providencia
+
+Plantillas de estructura para las consideraciones. Adaptar al caso; no son camisas de fuerza, pero la secuencia lógica problema → norma → jurisprudencia → caso concreto → decisión se mantiene en todas.
+
+## Tabla de contenido
+1. Acción de tutela
+2. Habeas corpus
+3. Providencia disciplinaria (L.1123 abogados / L.1952 funcionarios)
+4. Providencia penal (L.906/2004)
+
+---
+
+## 1. Acción de tutela
+
+Norma base: Decreto 2591 de 1991; arts. 86 C.P.
+
+Estructura de las consideraciones:
+1. **Competencia** (segunda instancia, art. 32 D.2591; impugnación).
+2. **Problema jurídico**: formularlo como pregunta precisa sobre la presunta vulneración del derecho fundamental invocado.
+3. **Procedibilidad** (juicio previo y autónomo):
+   - Legitimación en la causa (activa y pasiva).
+   - **Subsidiariedad** (art. 6.1 D.2591): existencia o no de otro medio de defensa judicial eficaz; perjuicio irremediable como excepción. Su incumplimiento → **improcedencia**, no negación.
+   - **Inmediatez**: razonabilidad del término entre el hecho y la interposición (referentes: SU-107/2024, T-373/2025 — verificar antes de citar).
+4. **Marco normativo y jurisprudencial** del derecho fundamental invocado: subreglas constitucionales aplicables.
+5. **Caso concreto**: subsunción de los hechos probados a las subreglas. Análisis de la presunción de veracidad (art. 20 D.2591) si hubo silencio de la accionada.
+6. **Decisión**:
+   - Si no supera procedibilidad → **declarar improcedente**.
+   - Si procede pero no hay vulneración → **negar el amparo**.
+   - Si hay vulneración → **conceder/amparar** y emitir órdenes.
+
+Recordatorio crítico: improcedencia (subsidiariedad/inmediatez) y negación del amparo (ausencia de vulneración) son resultados distintos; no fundir bajo "improcedencia".
+
+---
+
+## 2. Habeas corpus
+
+Norma base: Ley 1095 de 2006; art. 30 C.P.
+
+Estructura:
+1. **Competencia** y trámite de segunda instancia (impugnación, art. 7 L.1095).
+2. **Problema jurídico**: si la privación de la libertad es ilegal por captura ilegal o prolongación ilícita de la privación.
+3. **Marco normativo**: causales del art. 1 L.1095; término del art. 30 C.P.
+4. **Caso concreto**: verificación de la orden de autoridad competente, formalidades legales y vigencia de la privación.
+5. **Decisión**: concede (libertad) o niega/confirma.
+
+---
+
+## 3. Providencia disciplinaria
+
+### 3.1 Abogados — Ley 1123 de 2007
+Usar exclusivamente terminología y dogmática de la L.1123 (no transferir conceptos de la L.1952 ni del derecho penal: PROHIBIDO "ilicitud sustancial" y "bien jurídico" en este régimen).
+
+Estructura de segunda instancia:
+1. **Competencia** y procedencia del recurso.
+2. **Problema jurídico**: si la conducta se adecúa a la falta imputada y si concurren los elementos de responsabilidad.
+3. **Marco normativo**: descripción típica de la falta (p. ej., arts. 33.8, 34.f, 35.4 L.1123), deber profesional tutelado, antijuridicidad como afectación injustificada del deber (art. 4), culpabilidad.
+4. **Análisis probatorio**: valoración de las pruebas conforme a la sana crítica.
+5. **Tipicidad, antijuridicidad (afectación injustificada del deber profesional) y culpabilidad**: subsunción progresiva.
+6. **Decisión**: confirma, revoca o modifica; dosificación de la sanción si aplica.
+
+### 3.2 Funcionarios y empleados de la Rama Judicial — Ley 1952 de 2019
+Estructura análoga, con la dogmática del CGD (L.1952): falta disciplinaria, ilicitud sustancial, culpabilidad, causales de exclusión de responsabilidad. No mezclar con terminología de la L.1123.
+
+---
+
+## 4. Providencia penal — Ley 906 de 2004
+
+Estructura (segunda instancia / sentencia):
+1. **Competencia** y objeto del recurso (principio de limitación: el ad quem se restringe a lo impugnado).
+2. **Problema jurídico**: si se acreditó, más allá de duda razonable, la materialidad de la conducta y la responsabilidad.
+3. **Marco normativo y dogmático**: tipo penal, elementos, antijuridicidad, culpabilidad.
+4. **Valoración probatoria**: estándar de conocimiento (art. 381 L.906).
+5. **Caso concreto**: subsunción.
+6. **Decisión**: confirma, revoca, modifica; dosificación punitiva si procede.

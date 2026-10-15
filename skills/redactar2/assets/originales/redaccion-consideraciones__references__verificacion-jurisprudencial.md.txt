@@ -1,0 +1,76 @@
+# Protocolo de verificación jurisprudencial
+
+El objetivo es que ninguna cita falsa, errada o no verificada llegue a la providencia. La fabricación de jurisprudencia es el riesgo más grave: una sentencia inexistente o un radicado equivocado compromete al despacho.
+
+## Procedimiento por cada cita
+
+1. **Buscar** la providencia por su identificador o por la tesis. Consultas cortas y específicas. Si se conoce el número (p. ej., "SU-107 de 2024"), buscar directamente; si solo se conoce la tesis, buscar la subregla y luego identificar la sentencia hito.
+
+2. **Confirmar los cinco datos** de toda cita válida:
+   - Corporación (Corte Constitucional / Corte Suprema de Justicia / Consejo de Estado / CNDJ).
+   - Sala o Sección (Plena, de Revisión, Sala de Casación Penal/Laboral/Civil, Sección Segunda, etc.).
+   - Magistrado ponente.
+   - Número de sentencia o radicado.
+   - Fecha.
+
+3. **Confirmar vigencia y pertinencia**: que la sentencia no haya sido superada por una posterior, que la subregla siga vigente y que aplique a la materia del caso.
+
+4. **Resultado de la verificación**:
+   - **Completa** → insertar la cita y referenciarla a pie de página.
+   - **Parcial** (falta un dato) → insertar con marca `[VERIFICAR: falta confirmar (dato) de (sentencia)]` y avisar al usuario.
+   - **Nula** (no se halla o hay contradicción entre fuentes) → no insertar; reportar al usuario que la tesis necesita una sentencia de respaldo confirmada.
+
+## Capa de actualización jurisprudencial (2022 en adelante)
+
+Toda subregla que sostenga una tesis de la providencia se investiga en dos capas. La primera es la línea consolidada (sentencia fundadora e hitos de desarrollo), que se conserva siempre. La segunda es la actualización: pronunciamientos de 2022 hasta la fecha actual sobre la misma subregla.
+
+**Cómo buscar la capa de actualización:**
+- Incluir el año o rango reciente en la consulta: "[subregla o concepto] Corte Constitucional 2024", "[tema] sentencia unificación 2025", "[falta disciplinaria] CNDJ 2023".
+- Ejecutar al menos una búsqueda de actualización por subregla, con años distintos si la primera no arroja resultados pertinentes.
+- Priorizar en la revisión: sentencias de unificación (SU) y de Sala Plena de la Corte Constitucional, sentencias de unificación del Consejo de Estado (CE-SUJ), providencias recientes de las Salas de Casación de la CSJ y decisiones de la CNDJ, en ese orden de fuerza según la materia.
+
+**Cómo clasificar el hallazgo reciente (triaje obligatorio):**
+- **Confirma**: reitera la subregla sin variación → se cita en cadena con la fundadora como reiteración reciente de la línea.
+- **Precisa**: añade matices, criterios de aplicación o subfacetas → se citan ambas; la fundadora aporta la ratio original y la reciente el estado actual del concepto, y el texto muestra esa evolución.
+- **Modifica**: la corporación declaró expresamente un cambio de precedente → se advierte al usuario antes de redactar; la línea vigente se cita como fundamento y la anterior solo como contexto de la evolución.
+
+**Reglas de la capa de actualización:**
+- La actualización complementa, jamás desplaza: la jurisprudencia fundadora no se elimina por antigua.
+- Una sentencia reciente solo se presenta como cambio de línea si la propia corporación declaró la variación del precedente; la mera diferencia de énfasis no es cambio de línea.
+- Si no existe pronunciamiento reciente sobre la subregla, se informa al usuario ("línea sin variación conocida desde [año de la última sentencia verificada]") en lugar de forzar una cita reciente irrelevante o tangencial.
+- La sentencia reciente se somete al mismo procedimiento de verificación de cinco datos que cualquier otra cita.
+
+## Consulta directa en los portales oficiales de las Cortes
+
+La verificación no se agota en los resúmenes de los resultados de búsqueda: siempre que sea posible, se abre y se lee la página oficial. Procedimiento en dos pasos:
+
+1. **Localizar**: buscar en la web la providencia incluyendo el nombre de la corporación en la consulta (p. ej., "T-283 de 2024 Corte Constitucional", "radicado 11001... Consejo de Estado"), de modo que entre los resultados aparezca el enlace del portal oficial.
+2. **Abrir y leer la fuente primaria**: acceder al enlace oficial arrojado por la búsqueda y leer el texto de la providencia (o su ficha de relatoría) directamente. De esa lectura se extraen: los cinco datos de la cita (confirmados contra la página oficial, no contra el resumen del buscador), la ratio decidendi en su formulación textual, y el contexto necesario para la aplicabilidad o el distinguishing.
+
+Portales oficiales de referencia (el enlace concreto se obtiene siempre de la búsqueda, por si las rutas internas cambian):
+- Corte Constitucional: corteconstitucional.gov.co (relatoría y buscador de jurisprudencia).
+- Corte Suprema de Justicia: cortesuprema.gov.co y el sistema de consulta jurisprudencial de la Rama Judicial.
+- Consejo de Estado: consejodeestado.gov.co (relatoría / SAMAI).
+- Comisión Nacional de Disciplina Judicial: relatoría de la CNDJ en el portal de la Rama Judicial (ramajudicial.gov.co).
+
+Reglas de la consulta directa:
+- El dato tomado de la página oficial prevalece sobre cualquier fuente secundaria; si difieren, se corrige conforme al portal oficial.
+- Si el portal oficial no es accesible en el momento, la verificación puede completarse con dos fuentes secundarias independientes y concordantes en los cinco datos; si solo hay una, la cita se marca `[VERIFICAR: …]`.
+- La ratio que se invoque en el texto debe provenir de la lectura de la providencia o de su ficha oficial de relatoría, nunca de la paráfrasis de un blog.
+
+## Jerarquía de fuentes
+
+Preferir, en este orden:
+1. Relatorías oficiales de las Altas Cortes (Corte Constitucional, CSJ, Consejo de Estado, CNDJ) y buscadores de jurisprudencia oficiales.
+2. Texto de la sentencia en fuente primaria.
+3. Repositorios académicos o institucionales serios que reproduzcan datos completos.
+
+Evitar como fuente única: blogs, foros, agregadores sin datos de identificación completos. Si dos fuentes discrepan en ponente, fecha o radicado, tratar la cita como no verificada hasta resolver la discrepancia.
+
+## Regla sobre salvamentos de voto
+
+Los salvamentos y aclaraciones de voto de magistrados de las Altas Cortes carecen de fuerza vinculante y de valor precedencial; son posiciones individuales dentro de una decisión colegiada. No se citan como autoridad. Solo se mencionan si el usuario los invoca expresamente como punto de contraste, y en ese caso se identifican claramente como salvamento, no como ratio.
+
+## Formato de la nota al pie
+
+Corporación, Sala/Sección, sentencia/radicado, M.P. [nombre], fecha. Cuando el documento ya tenga un estilo de citación propio, replicarlo en lugar de imponer otro.

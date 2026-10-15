@@ -1,0 +1,66 @@
+{
+  "version": 1,
+  "created": "2026-09-28",
+  "sources": [
+    {
+      "source": "lectura-juridica/SKILL.md",
+      "copy": "assets/originales/lectura-juridica__SKILL.md.txt",
+      "sha256": "8b12ba8d108c6466a588e9796ef1781dedf88c8d54d4c3f070fc3778402be7b9",
+      "bytes": 12403
+    },
+    {
+      "source": "redaccion-consideraciones/SKILL.md",
+      "copy": "assets/originales/redaccion-consideraciones__SKILL.md.txt",
+      "sha256": "750f62e0f1f9f56d5d9f08853d40dc46a327b0670b74f5e0bd86571fb310dcc4",
+      "bytes": 18459
+    },
+    {
+      "source": "redaccion-consideraciones/references/argumentacion.md",
+      "copy": "assets/originales/redaccion-consideraciones__references__argumentacion.md.txt",
+      "sha256": "78e0f9f64b4ceaf171b6950b042d76a17c48939499c7a0f55af615e14dfe9d3f",
+      "bytes": 6272
+    },
+    {
+      "source": "redaccion-consideraciones/references/dogmatica.md",
+      "copy": "assets/originales/redaccion-consideraciones__references__dogmatica.md.txt",
+      "sha256": "a90963736d78c0dde747eadb8870f662c5c360dc78a4340215e6138a6be0c259",
+      "bytes": 4553
+    },
+    {
+      "source": "redaccion-consideraciones/references/estructura-providencias.md",
+      "copy": "assets/originales/redaccion-consideraciones__references__estructura-providencias.md.txt",
+      "sha256": "0aa015e4d4cdc26778132581f2a689e346c05cd35f5383c6c0d0cf7df91a1a4b",
+      "bytes": 4269
+    },
+    {
+      "source": "redaccion-consideraciones/references/protocolo-lm.md",
+      "copy": "assets/originales/redaccion-consideraciones__references__protocolo-lm.md.txt",
+      "sha256": "dbef52a4a1e0011bae9252cfed11b652ef5f4ea0f6d5db5214f16a52347bec82",
+      "bytes": 2263
+    },
+    {
+      "source": "redaccion-consideraciones/references/verificacion-jurisprudencial.md",
+      "copy": "assets/originales/redaccion-consideraciones__references__verificacion-jurisprudencial.md.txt",
+      "sha256": "f2a140bb8f710953abf19b6dd80ea2dcad0890a8d04588761ba9bb11677658a9",
+      "bytes": 6872
+    },
+    {
+      "source": "SPEC-redactar2-mcp.md",
+      "copy": "assets/originales/SPEC-redactar2-mcp.md.txt",
+      "sha256": "a296ad5054c800e86cd5ace5ffd8dffc5be9642d28dfca1303d2edd7f668e51f",
+      "bytes": 7952
+    }
+  ],
+  "archives": [
+    {
+      "name": "redaccion-consideraciones.skill",
+      "sha256": "7f664399b90833d8b10d55dd4e80b54a520f9c2495cdf884917f7d33b128c558",
+      "bytes": 18823
+    },
+    {
+      "name": "lectura-juridica.skill",
+      "sha256": "f9e52ce9da11ffb5e35956214fc8f5dd7c6c8352315b560f958bf2505b0e762e",
+      "bytes": 4894
+    }
+  ]
+}

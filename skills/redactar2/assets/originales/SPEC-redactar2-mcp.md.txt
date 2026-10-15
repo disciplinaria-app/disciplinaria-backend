@@ -1,0 +1,94 @@
+# SPEC — Conector MCP remoto "Redactar2 · Verificador"
+
+Documento de encargo para Codex. Objetivo: exponer la verificación jurisprudencial como servidor MCP remoto, registrable como conector personalizado de Claude, para que la skill **Redactar2** lo use dentro de Word.
+
+## 0. Contexto y restricciones (leer antes de escribir código)
+
+- **Base existente.** Ya existe un Verificador de Citas Jurisprudenciales (pipeline de 4 etapas) desplegado en Railway con FastAPI. **Primero** inspecciona ese código y reutilízalo; no reescribas la lógica de verificación. Este trabajo añade una capa MCP encima.
+- **Infraestructura disponible.** Railway (FastAPI), Supabase (Postgres + vectores), GitHub `disciplinaria-app/disciplinaria-app`. Desplegar como **servicio separado** en Railway (p. ej. `redactar2-mcp`), para no comprometer la plataforma DISCIPLINAR[IA].
+- **Requisitos de Claude para conectores remotos** (fuente: claude.com/docs/connectors/building, consultada 2026-09-28):
+  - Transporte **Streamable HTTP** (HTTP+SSE está en desuso; no usarlo).
+  - OAuth según las especificaciones MCP 2025-03-26 / 2025-06-18 / 2025-11-25, con Dynamic Client Registration. Callback: `https://claude.ai/api/mcp/auth_callback`.
+  - **Timeout de 240 s por llamada** en Claude.ai/Word y resultado máximo de **~150.000 caracteres**.
+  - El servidor debe ser accesible desde internet (las llamadas salen de los servidores de Anthropic, no del computador del usuario).
+  - Admite tools, prompts y resources. **No admite sampling**.
+- **SDK.** Python MCP SDK oficial (`modelcontextprotocol/python-sdk`, FastMCP), montado sobre FastAPI/ASGI.
+
+## 1. Principio rector: el servidor recupera y compara; nunca genera
+
+- El servidor **no llama a ningún LLM** para producir datos de una cita. Todo lo que devuelve es texto recuperado de una fuente, con su URL y fecha de consulta, o una comparación determinista.
+- Si no encuentra la providencia, devuelve `no_hallada`. **Jamás** completa un dato faltante por inferencia.
+- Cada campo devuelto lleva su **evidencia**: fragmento literal de la fuente (máx. 500 caracteres), URL y `consultado_en` (ISO 8601).
+- Si el pipeline existente usa un LLM en alguna etapa, esa etapa debe quedar marcada en la respuesta (`origen: "llm"`) y nunca puede producir los cinco datos de identificación.
+
+## 2. Fase de reconocimiento (antes de implementar el scraping)
+
+Documenta en `docs/portales.md`, **verificándolo en vivo**, cómo se consulta cada portal. No supongas rutas: confírmalas.
+
+| Corporación | Punto de partida | Qué confirmar |
+|---|---|---|
+| Corte Constitucional | corteconstitucional.gov.co (relatoría) | patrón de URL por sentencia (T/C/SU/A), buscador, codificación |
+| Corte Suprema de Justicia | cortesuprema.gov.co y consulta jurisprudencial de la Rama Judicial | formulario, JavaScript, paginación, descarga del texto |
+| Consejo de Estado | consejodeestado.gov.co / SAMAI | búsqueda por radicado de 23 dígitos, acceso al texto |
+| CNDJ | relatoría en ramajudicial.gov.co | ubicación real de la relatoría y formato de las providencias |
+
+Para cada portal, registra lo siguiente: si basta `httpx` o si requiere navegador (**Playwright headless en el servidor**), sus límites de tasa, su `robots.txt` y sus términos de uso. Respeta ambos. Aplica un máximo de 1 solicitud por segundo por dominio y un User-Agent identificable.
+
+## 3. Herramientas MCP a exponer
+
+Todas en español, con descripciones precisas, porque Claude elige la herramienta por su descripción.
+
+### 3.1 `verificar_cita`
+Entrada:
+```json
+{ "corporacion": "Corte Constitucional", "sala": "Sala Plena", "tipo_numero": "SU-107 de 2024",
+  "radicado": null, "ponente": "…", "fecha": "2024-04-11", "ratio_invocada": "texto opcional" }
+```
+Salida: un estado por campo (`confirmado` | `discrepante` | `no_hallado`), el valor encontrado en la fuente oficial, la evidencia, un `estado_global` (`confirmada` | `parcial` | `no_hallada`) y la URL oficial.
+- Si viene `ratio_invocada`, busca en el texto el pasaje más cercano. Devuelve ese pasaje literal y un indicador de si aparece en la **parte motiva o resolutiva**, o en una aclaración o salvamento de voto. Si solo aparece en un salvamento, marca `solo_en_salvamento: true`.
+
+### 3.2 `buscar_providencia`
+Recibe una tesis o subregla en lenguaje natural, junto con la corporación y un rango de años. Devuelve candidatos, cada uno con sus identificadores y URL oficial, y todos con `verificado: false` hasta que se pasen por `verificar_cita`.
+
+### 3.3 `actualizar_linea`
+Recibe una subregla y la sentencia fundadora. Busca pronunciamientos desde 2022 hasta la fecha. Devuelve candidatos con fragmentos donde la sentencia reciente **cita a la fundadora**. Además, marca `posible_cambio_precedente: true` solo si el texto contiene fórmulas de rectificación o cambio de precedente, que deben listarse en `config/marcadores.yaml`. **El servidor no clasifica** si la sentencia confirma, precisa o modifica la subregla: esa clasificación la hace la skill, con la evidencia que el servidor devuelve.
+
+### 3.4 `leer_providencia`
+Recibe una URL oficial y un número de página. Devuelve el texto por fragmentos de 100.000 caracteres o menos, para respetar el límite de 150.000.
+
+### 3.5 `estado_verificacion` (para trabajos largos)
+Si una verificación puede superar los 240 s, `verificar_cita` devuelve un `job_id` y la skill consulta el resultado con esta herramienta. Ninguna llamada debe bloquearse más de 200 s.
+
+## 4. Caché y corpus verificado (idea tomada de hyperresearch)
+
+- Tabla `citas_verificadas` en Supabase con los cinco datos, URL, hash del texto, fecha de consulta, pasajes de ratio y estado.
+- Una cita confirmada se reutiliza sin consultar de nuevo durante 30 días. Pasado ese plazo, se revalida.
+- El corpus alimenta también el libro sobre faltas de la Ley 1123 y DISCIPLINAR[IA]. Por eso conviene diseñar el esquema para reutilizarlo desde el inicio.
+
+## 5. Seguridad y datos
+
+- OAuth obligatorio. En esta versión, un solo usuario autorizado.
+- **El conector recibe solo metadatos de citas, nunca el contenido del expediente ni de la providencia en elaboración.** Documenta esta regla en el README y hazla cumplir: rechaza entradas de más de 2.000 caracteres en los campos de texto libre.
+- Registra en los logs las solicitudes (herramienta, cita consultada y resultado), sin datos de partes.
+- Guarda los secretos en las variables de entorno de Railway, nunca en el repositorio.
+
+## 6. Pruebas (criterio de aceptación)
+
+- `tests/golden.json`: **el usuario suministrará** un conjunto de citas reales verificadas a mano en los cuatro portales. No las generes tú.
+- `tests/fabricadas.json`: citas inventadas a propósito (números inexistentes, ponente cambiado, fecha alterada en un día, radicado con un dígito errado). **Criterio de aceptación: el 100 % debe devolver `no_hallada` o `discrepante`.** Un solo falso positivo bloquea el despliegue.
+- Prueba de ratio atribuida a un salvamento: debe devolver `solo_en_salvamento: true`.
+- Pruebas de timeout y de fragmentación del texto.
+- Validación del flujo OAuth con MCP Inspector, y luego con `claude mcp add` en Claude Code.
+
+## 7. Entregables y orden de trabajo
+
+1. `docs/portales.md` (reconocimiento), y **detenerse para revisión**.
+2. Servidor MCP con `verificar_cita` y `leer_providencia` sobre el pipeline existente, más las pruebas de la sección 6.
+3. `buscar_providencia`, `actualizar_linea` y `estado_verificacion`.
+4. Caché en Supabase.
+5. Despliegue en Railway, README con la URL del endpoint y los pasos para registrarlo en Claude → Personalizar → Conectores.
+
+## 8. Fuera de alcance
+
+- No redactar texto jurídico ni clasificar líneas jurisprudenciales: eso lo hace la skill Redactar2.
+- No usar portales de pago ni fuentes secundarias como fuente de verdad. Si se usan como pista de búsqueda, marcarlas como `fuente: secundaria` y no confirmar ningún campo con ellas.

@@ -1,0 +1,73 @@
+{
+  "esquema": 1,
+  "caso_id": "",
+  "modo": "integral",
+  "fecha_control": "",
+  "cierre_solicitado": false,
+  "revision_cobertura": {
+    "comprobada": false,
+    "evidencia": ""
+  },
+  "alcance": {
+    "piezas": [],
+    "hechos": [],
+    "normas": [],
+    "citas": [],
+    "argumentos": [],
+    "problemas": [],
+    "determinaciones": [],
+    "apartados": []
+  },
+  "piezas": [],
+  "hechos": [],
+  "normas": [],
+  "citas": [],
+  "argumentos": [],
+  "problemas": [],
+  "determinaciones": [],
+  "apartados": [],
+  "protecciones": [],
+  "cambios_verificados": [],
+  "hallazgos": [],
+  "puertas": {
+    "G0": {
+      "estado": "pendiente",
+      "evidencia": ""
+    },
+    "G1": {
+      "estado": "pendiente",
+      "evidencia": ""
+    },
+    "G2": {
+      "estado": "pendiente",
+      "evidencia": ""
+    },
+    "G3": {
+      "estado": "pendiente",
+      "evidencia": ""
+    },
+    "G4": {
+      "estado": "pendiente",
+      "evidencia": ""
+    },
+    "G5": {
+      "estado": "pendiente",
+      "evidencia": ""
+    },
+    "G6": {
+      "estado": "pendiente",
+      "evidencia": ""
+    },
+    "G7": {
+      "estado": "pendiente",
+      "evidencia": ""
+    }
+  },
+  "entrega": {
+    "medio": "",
+    "referencia": "",
+    "relectura_confirmada": false,
+    "edicion_afirmada": false,
+    "escritura_confirmada": false
+  }
+}
