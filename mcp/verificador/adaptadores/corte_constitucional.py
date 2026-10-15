@@ -74,7 +74,10 @@ class CorteConstitucional(Adaptador):
                 elegidas = sorted(sorted(palabras, key=len, reverse=True)[:3], key=palabras.index)
                 consulta_limpia = " ".join(elegidas)
         f_desde = f"{desde}-01-01" if desde else "1992-01-01"
-        f_hasta = f"{hasta}-12-31" if hasta else date.today().isoformat()
+        # El buscador rechaza fechas posteriores a hoy («La fecha no puede ser mayor
+        # a la fecha actual») y no pinta resultados: se acota al día de hoy.
+        hoy = date.today().isoformat()
+        f_hasta = min(f"{hasta}-12-31", hoy) if hasta else hoy
         url = f"{self.portal['buscador'].rstrip('/')}/texto/{f_desde}/{f_hasta}/{quote(consulta_limpia)}/0/0"
         if not await self.nav.disponible():
             return [], Respuesta(estado="parcial", url_inicial=url, detalle="el buscador exige navegador y Playwright no está disponible")
