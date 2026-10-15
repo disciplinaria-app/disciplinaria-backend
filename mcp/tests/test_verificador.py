@@ -186,7 +186,7 @@ class TestServicio(unittest.TestCase):
         self.assertEqual(r.estado, "bloqueada")
 
     def test_busqueda_sin_navegador_reporta_parcial_no_inexistencia(self):
-        s, _ = servicio_con_html("<html><body>portal</body></html>", "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml")
+        s, _ = servicio_con_html("<html><body>portal</body></html>", "https://relatoria.cndj.gov.co/")
         r = self.run_async(s.buscar_providencia("ilicitud sustancial deber funcional", "CNDJ", 2022, 2026, "rapido"))
         self.assertEqual(r.coverage_status, "insuficiente")
         self.assertIn(r.estado, ("parcial", "portal_no_disponible"))
