@@ -140,9 +140,20 @@ def segmentar(texto: str, tamano: int = 3500) -> list[Bloque]:
             inicio_parrafo = i
         actual.append(p)
     cerrar(len(parrafos))
-    for b in bloques:
-        pass
     return bloques
+
+
+def rol_en_posicion(bloques: list[Bloque], pos: int) -> RolTextual:
+    """Rol del bloque que contiene la posición de carácter `pos` (los bloques
+    se reconstruyen unidos por dos saltos de línea)."""
+    if pos < 0:
+        return "desconocido"
+    acumulado = 0
+    for b in bloques:
+        acumulado += len(b.texto) + 2
+        if pos < acumulado:
+            return b.rol
+    return bloques[-1].rol if bloques else "desconocido"
 
 
 def rol_de_posicion(bloques: list[Bloque], indice: int) -> RolTextual:
@@ -174,18 +185,19 @@ def localizar_pasaje(texto: str, consulta: str, ventana: int = 900) -> tuple[str
     texto_n, consulta_n = normalizar(texto), normalizar(consulta)
     pos = texto_n.find(consulta_n)
     if pos >= 0:
-        # Mapear a posición aproximada en el texto original.
+        # Mapear a posición aproximada en el texto original. La posición que se
+        # devuelve es la del hallazgo, no la del inicio de la ventana.
         ratio = len(texto) / max(len(texto_n), 1)
         p = int(pos * ratio)
         ini, fin = max(0, p - ventana // 2), min(len(texto), p + ventana // 2)
-        return texto[ini:fin], ini, 1.0
+        return texto[ini:fin], p, 1.0
     mejor = ("", -1, 0.0)
     paso = max(ventana // 2, 1)
     for ini in range(0, max(len(texto) - ventana, 0) + 1, paso):
         frag = texto[ini:ini + ventana]
         s = similitud(frag, consulta)
         if s > mejor[2]:
-            mejor = (frag, ini, s)
+            mejor = (frag, ini + ventana // 2, s)
     return mejor
 
 

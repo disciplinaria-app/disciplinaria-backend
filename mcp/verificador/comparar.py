@@ -119,8 +119,8 @@ def fechas_en_texto(texto: str, limite: int = 60) -> list[tuple[date, int]]:
 # --- Ponentes ----------------------------------------------------------------
 
 _RE_PONENTE = re.compile(
-    r"(?:magistrad[oa]\s+ponente|magistrad[oa]\s+sustanciador[a]?|m\.?\s?p\.?|ponente)\s*[:.]?\s*"
-    r"(?:dr[a]?\.?\s+)?(?P<nombre>[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ'’.-]+(?:\s+(?:de\s+|del\s+|la\s+)?[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ'’.-]+){1,5})",
+    r"(?i:magistrad[oa]\s+ponente|magistrad[oa]\s+sustanciador[a]?|consejer[oa]\s+ponente|\bm\.?\s?p\.?|ponente)\s*[:.]?\s*"
+    r"(?i:dr[a]?\.?\s+)?(?P<nombre>[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ'’.-]+(?:\s+(?:de\s+|del\s+|la\s+)?[A-ZÁÉÍÓÚÑ][A-Za-zÁÉÍÓÚÑáéíóúñ'’.-]+){1,5})",
 )
 
 
