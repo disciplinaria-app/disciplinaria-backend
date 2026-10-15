@@ -32,7 +32,10 @@ gcloud run deploy redactar2-mcp \
   --allow-unauthenticated \
   --set-env-vars "MCP_API_KEY=${LLAVE},MCP_CONTACTO=${CONTACTO}"
 
-URL="$(gcloud run services describe redactar2-mcp --region "$REGION" --format 'value(status.url)')"
+# Usar la URL determinista (con el número de proyecto): la forma antigua
+# (*-<hash>-<región>.a.run.app) ha mostrado 404 del frente de Google para POST.
+NUMERO="$(gcloud projects describe "$PROYECTO" --format 'value(projectNumber)')"
+URL="https://redactar2-mcp-${NUMERO}.${REGION}.run.app"
 echo
 echo "=============================================================="
 echo "Listo. Conecte en claude.ai → Conectores → Añadir conector personalizado:"

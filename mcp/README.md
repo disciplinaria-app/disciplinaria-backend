@@ -53,7 +53,7 @@ Cloud Run es un servicio de Google que ejecuta el programa solo cuando alguien l
      --set-env-vars MCP_API_KEY=PEGUE-AQUI-SU-LLAVE,MCP_CONTACTO=su-correo@ejemplo.com
    ```
    `--allow-unauthenticated` deja que Claude llegue a la puerta; la llave (`MCP_API_KEY`) es la que abre. Sin llave correcta el servidor responde 401.
-   La primera publicación tarda de 5 a 10 minutos porque construye la imagen con el navegador. Al final imprime una URL como `https://redactar2-mcp-xxxxx-ue.a.run.app`.
+   La primera publicación tarda de 5 a 10 minutos porque construye la imagen con el navegador. Use la URL con el número de proyecto, `https://redactar2-mcp-<número>.<región>.run.app` (la imprime `publicar.sh`); la forma antigua `*-<hash>-ue.a.run.app` devolvió 404 del frente de Google para las peticiones POST.
 6. Compruebe: abra `https://SU-URL/health` en el navegador. Debe ver `{"estado":"ok",...}`.
 
 ### Conectar a Claude
