@@ -25,3 +25,26 @@ Para cada portal, anotar aquí: `robots.txt` y términos de uso; si la búsqueda
 8. Consulta con nombre de parte → `bloqueada` sin salir a internet.
 
 Registrar fecha, versión del servidor y resultado de cada prueba debajo de esta línea.
+
+## Comprobado en vivo (octubre de 2026)
+
+**Corte Constitucional.** La búsqueda funciona por URL
+`/relatoria/buscador-jurisprudencia/texto/{desde}/{hasta}/{frase}/0/0`; los
+resultados se pintan en `#tabla-resultado` con enlaces
+`/relatoria/{año}/{TIPO}-{num}-{aa}.htm` (autos en `/relatoria/Autos/…`), «Tema:» y
+«Fecha de providencia AAAA-MM-DD». SU-107/2024 se verificó de extremo a extremo.
+
+**WebRelatoria (CNDJ, CSJ, Consejo de Estado tradicional).**
+- Campos ocultos bajo el panel «Criterios de búsqueda»; solo `searchForm:temaInput`
+  tiene id estable; «Texto Completo» se localiza por su rótulo.
+- Las filas son `tbody[id$='jurisTable_data'] tr[data-rk]` con un
+  `span[id$=':descrip']` (FECHA dd/mm/aaaa, PONENTE, DEMANDANTE, DEMANDADO,
+  DESCRIPTOR-RESTRICTOR). No muestran radicado: se lee en la «titulación»
+  (botón `tituIcon` → `[id$='dialogInfoPanel']`). Los nombres de las partes no se
+  copian al fragmento del candidato.
+- Sin resultados: diálogo `[id$='dialogMessPanel']` «No se encontraron resultados…».
+- Como el portal no tiene URL por providencia, `url_oficial` del candidato lleva
+  `#wr?consulta=…&rk=…`; `leer_providencia` repite la búsqueda y abre la fila con
+  el botón HTML (o Word). Pendiente de confirmar en vivo: que el texto escrito en
+  «Texto Completo» se envíe (el adaptador informa `campo`, `valor` y `sentencia`
+  en `detalle`) y el formato en que llega el documento.

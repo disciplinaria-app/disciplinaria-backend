@@ -245,3 +245,51 @@ class TestServidor(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# --- WebRelatoria (filas data-rk comprobadas en vivo en la CNDJ) ---------------
+_FILA_CNDJ = """
+<div id="resultForm:jurisTable"><table><tbody id="resultForm:jurisTable_data">
+<tr data-ri="0" data-rk="110538" class="ui-widget-content ui-datatable-even"><td></td><td>
+<table id="resultForm:jurisTable:0:display"><tr><td><span id="resultForm:jurisTable:0:descrip"><div>
+<b>COMISIÓN NACIONAL DE DISCIPLINA JUDICIAL</b><br>SENTENCIA<br>DISCIPLINARIO<br>
+<b>FECHA : </b>27/04/2022<br><b>PONENTE : </b>NOMBRE APELLIDO PONENTE<br>
+<b>SALVAMENTO DE VOTO : </b><br><b>DEMANDANTE : </b>PARTE UNO<br><b>DEMANDADO : </b>PARTE DOS<br>
+<b>DESCRIPTOR-RESTRICTOR : </b>Abogados en Consulta<br></div></span></td></tr></table></td>
+<td><button id="resultForm:jurisTable:0:j_idt80"><span class="tituIcon"></span></button>
+<button id="resultForm:jurisTable:0:j_idt82"><span class="htmlIcon"></span></button></td></tr>
+<tr class="ui-widget-content ui-datatable-empty-message"><td colspan="3">No hay resultados para mostrar.</td></tr>
+</tbody></table></div>
+"""
+
+
+class TestWebRelatoria:
+    def _adaptador(self):
+        from verificador.adaptadores.webrelatoria import CNDJ
+        from verificador.portales import PORTALES
+        from verificador.modelos import Corporacion
+        return CNDJ(http=None, navegador=None, portal=PORTALES[Corporacion.CNDJ])
+
+    def test_formatea_consulta_como_frase(self):
+        from verificador.adaptadores.webrelatoria import _formatear_consulta
+        assert _formatear_consulta("ilicitud sustancial") == '"ilicitud sustancial"'
+        assert _formatear_consulta('"ilicitud   sustancial"') == '"ilicitud sustancial"'
+        assert _formatear_consulta("ilicitud") == "ilicitud"
+
+    def test_extrae_fila_data_rk_sin_nombres_de_partes(self):
+        a = self._adaptador()
+        cands = a._extraer(_FILA_CNDJ, "ilicitud sustancial", None, None)
+        assert len(cands) == 1
+        c = cands[0]
+        assert c.identificador == "fila-110538"
+        assert str(c.fecha) == "2022-04-27"
+        assert c.ponente == "NOMBRE APELLIDO PONENTE"
+        assert c.titulo == "Abogados en Consulta"
+        assert "PARTE UNO" not in (c.fragmento_descubrimiento or "")
+        assert c.url_oficial.endswith("#wr?consulta=ilicitud%20sustancial&rk=110538")
+        assert a._rk_de(c.url_oficial) == "110538"
+        assert c.verificado is False
+
+    def test_filtra_por_ventana_de_anios(self):
+        a = self._adaptador()
+        assert a._extraer(_FILA_CNDJ, "x", 2023, 2026) == []
