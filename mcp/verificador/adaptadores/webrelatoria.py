@@ -138,6 +138,18 @@ class WebRelatoria(Adaptador):
         except Exception as e:
             return f"error: {e.__class__.__name__}"
 
+    async def _pagina_siguiente(self, p) -> bool:
+        """Pasa a la página siguiente si el botón existe, está visible y habilitado."""
+        try:
+            siguiente = p.locator(SEL["siguiente_pagina"]).first
+            if await siguiente.count() == 0 or not await siguiente.is_visible() or not await siguiente.is_enabled():
+                return False
+            await siguiente.click(timeout=3000)
+            await p.wait_for_timeout(1500)
+            return True
+        except Exception:
+            return False
+
     async def _clic_buscar(self, p) -> None:
         await p.locator(SEL["boton_buscar"]).first.click(timeout=5000)
 
@@ -216,13 +228,10 @@ class WebRelatoria(Adaptador):
                     for c in self._extraer(html, consulta, desde, hasta):
                         if all(c.identificador != x.identificador for x in candidatos):
                             candidatos.append(c)
-                    siguiente = p.locator(SEL["siguiente_pagina"])
-                    if len(candidatos) >= max_resultados or await siguiente.count() == 0:
+                    if len(candidatos) >= max_resultados or asyncio.get_event_loop().time() - inicio > 25:
                         break
-                    if asyncio.get_event_loop().time() - inicio > 25:
+                    if not await self._pagina_siguiente(p):
                         break
-                    await siguiente.first.click()
-                    await p.wait_for_timeout(1500)
                     paginas += 1
                 # Titulación (radicado y tesis) de las primeras filas, si queda tiempo.
                 titulados = 0
@@ -349,11 +358,8 @@ class WebRelatoria(Adaptador):
                 fila = p.locator(f"tr[data-rk='{rk}']").first
                 paginas = 0
                 while await fila.count() == 0 and paginas < 5:
-                    siguiente = p.locator(SEL["siguiente_pagina"])
-                    if await siguiente.count() == 0:
+                    if not await self._pagina_siguiente(p):
                         break
-                    await siguiente.first.click()
-                    await p.wait_for_timeout(1500)
                     paginas += 1
                 if await fila.count() == 0:
                     return None, Respuesta(estado="no_hallada", url_inicial=url, url_final=p.url,
