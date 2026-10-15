@@ -95,3 +95,54 @@ class Navegador:
         estado = "ok" if codigo is None or codigo < 400 else ("bloqueada" if codigo in (401, 403, 429) else "portal_no_disponible")
         return Respuesta(estado=estado, url_inicial=url, url_final=url, codigo=codigo,
                          contenido=html.encode("utf-8"), tipo="text/html", latencia_ms=lat)
+
+
+    async def inspeccionar(self, url: str, esperar_ms: int = 4000, patron_enlaces: Optional[str] = None,
+                           clic_texto: Optional[str] = None) -> dict:
+        """Describe una página renderizada: URL final, título, campos de formulario,
+        botones, enlaces (filtrados por patrón) e iframes. Herramienta de
+        mantenimiento para ajustar selectores cuando un portal cambia."""
+        if not dominio_autorizado(url):
+            return {"estado": "bloqueada", "detalle": "dominio fuera de la lista autorizada"}
+        try:
+            async with self.pagina() as p:
+                resp = await p.goto(url, wait_until="domcontentloaded")
+                if clic_texto:
+                    try:
+                        await p.get_by_text(clic_texto, exact=False).first.click(timeout=8000)
+                    except Exception as e:  # se informa, no se aborta
+                        clic_error = f"{e.__class__.__name__}: {str(e)[:120]}"
+                    else:
+                        clic_error = None
+                else:
+                    clic_error = None
+                try:
+                    await p.wait_for_load_state("networkidle", timeout=esperar_ms)
+                except Exception:
+                    pass
+                await p.wait_for_timeout(min(esperar_ms, 3000))
+                datos = await p.evaluate(
+                    """(patron) => {
+                        const vis = e => !!(e.offsetWidth || e.offsetHeight || e.getClientRects().length);
+                        const campos = [...document.querySelectorAll('input,select,textarea')].slice(0,80).map(e => ({
+                            tag: e.tagName.toLowerCase(), id: e.id || null, name: e.name || null, type: e.type || null,
+                            placeholder: e.placeholder || null, visible: vis(e),
+                            etiqueta: (e.labels && e.labels[0] ? e.labels[0].innerText : '').trim().slice(0,60) || null,
+                            opciones: e.tagName === 'SELECT' ? [...e.options].slice(0,25).map(o => o.text.trim()) : undefined }));
+                        const botones = [...document.querySelectorAll('button,input[type=submit],input[type=button],a.ui-button,[role=button]')].slice(0,60).map(e => ({
+                            tag: e.tagName.toLowerCase(), id: e.id || null, texto: (e.innerText || e.value || '').trim().slice(0,60), visible: vis(e) }));
+                        const re = patron ? new RegExp(patron, 'i') : null;
+                        const enlaces = [...document.querySelectorAll('a[href]')].map(a => ({ texto: (a.innerText||'').trim().slice(0,80), href: a.href }))
+                            .filter(a => !re || re.test(a.href) || re.test(a.texto)).slice(0,80);
+                        const iframes = [...document.querySelectorAll('iframe')].map(f => f.src).slice(0,10);
+                        return { titulo: document.title, campos, botones, enlaces, iframes,
+                                 texto_inicio: (document.body.innerText||'').replace(/\s+/g,' ').slice(0,600),
+                                 caracteres_texto: (document.body.innerText||'').length };
+                    }""", patron_enlaces)
+                datos.update({"estado": "ok", "url_inicial": url, "url_final": p.url,
+                              "codigo_http": resp.status if resp else None, "clic_error": clic_error})
+                return datos
+        except Exception as e:
+            nombre = e.__class__.__name__
+            return {"estado": "timeout" if "Timeout" in nombre else "portal_no_disponible",
+                    "url_inicial": url, "detalle": f"{nombre}: {str(e)[:300]}"}

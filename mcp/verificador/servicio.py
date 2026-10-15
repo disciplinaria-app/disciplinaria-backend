@@ -117,6 +117,9 @@ class Servicio:
                 advertencias.append("el pasaje localizado está en un voto separado; no es ratio de la mayoría")
             if rol in ("argumento_parte", "decision_resenada"):
                 advertencias.append("el pasaje está en una sección de antecedentes o reseña; verificar que no sea un argumento de parte o de instancia")
+        if campos["identificador"].estado == "no_hallado":
+            advertencias.append("el documento recuperado no muestra el identificador en su encabezado; puede ser una "
+                                "página genérica del portal y no la providencia. Leer con leer_providencia antes de citar")
         estados = [c.estado for k, c in campos.items() if k != "corporacion"]
         if any(e == "discrepante" for e in estados):
             global_ = "discrepante"
