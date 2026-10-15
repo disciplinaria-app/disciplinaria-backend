@@ -49,9 +49,14 @@ PORTALES: dict[Corporacion, dict[str, str]] = {
     },
     Corporacion.CNDJ: {
         "nombre": "Comisión Nacional de Disciplina Judicial",
-        "base": _env("CNDJ_BASE", "https://jurisprudencia.ramajudicial.gov.co"),
-        "relatoria": _env("CNDJ_RELATORIA", "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml"),
-        "buscador": _env("CNDJ_BUSCADOR", "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml"),
+        # Relatoría propia de la CNDJ (relatoria.cndj.gov.co): paneles «Búsqueda General»,
+        # «Búsqueda Avanzada» (magistrado, año y número de radicación, temas o descriptor,
+        # asunto, nombre del disciplinado) y «Búsqueda en Providencia». La antigua
+        # WebRelatoria de ramajudicial.gov.co se conserva como respaldo.
+        "base": _env("CNDJ_BASE", "https://relatoria.cndj.gov.co"),
+        "relatoria": _env("CNDJ_RELATORIA", "https://relatoria.cndj.gov.co/"),
+        "buscador": _env("CNDJ_BUSCADOR", "https://relatoria.cndj.gov.co/"),
+        "webrelatoria": _env("CNDJ_WEBRELATORIA", "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml"),
     },
 }
 

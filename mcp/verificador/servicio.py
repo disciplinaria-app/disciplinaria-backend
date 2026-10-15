@@ -12,7 +12,7 @@ from datetime import date, datetime, timezone
 from typing import Optional
 
 from .adaptadores import Adaptador, construir_adaptadores
-from .cache import Corpus
+from .cache import Corpus, sha256
 from .comparar import (canonizar_identificador, comparar_fecha, comparar_identificador,
                        comparar_ponente, comparar_sala, identificadores_en_texto)
 from .consultas import revisar_entrada, variantes
@@ -50,6 +50,8 @@ class Servicio:
                                  usar_corpus: bool = True) -> tuple[Optional[DocumentoOficial], Respuesta, str]:
         """Corpus → URL directa/HTTP → navegador. Devuelve (doc, respuesta, canal)."""
         adaptador = self.adaptadores[corp]
+        if url and "#inspeccionar" in url:
+            return await self._inspeccionar_por_url(corp, url)
         if usar_corpus:
             doc = self.corpus.obtener(corp.value, canonizar_identificador(identificador))
             if doc:
@@ -84,6 +86,32 @@ class Servicio:
                             "identificador; puede que el identificador esté mal escrito o que el portal haya cambiado"
                             + (f" · último intento directo: {ultima.detalle}" if ultima and ultima.detalle else ""))
         return None, resp, "buscador"
+
+    async def _inspeccionar_por_url(self, corp: Corporacion, url: str) -> tuple[Optional[DocumentoOficial], Respuesta, str]:
+        """Mantenimiento: `leer_providencia(url_oficial="https://portal/#inspeccionar?acciones=<json>&esperar=6000&html=<selector>&clic=<texto>&enlaces=<regex>")`
+        devuelve, como si fuera un documento, la descripción de la página renderizada
+        (campos, botones, enlaces, tablas, formularios, peticiones de red). Permite
+        ajustar los adaptadores desde un cliente que solo ve las herramientas básicas."""
+        import json
+        from urllib.parse import parse_qs, unquote
+        base, _, frag = url.partition("#inspeccionar")
+        q = parse_qs(frag.lstrip("?&"))
+        def _p(k, d=None):
+            v = q.get(k)
+            return unquote(v[0]) if v else d
+        acciones = None
+        if _p("acciones"):
+            try:
+                acciones = json.loads(_p("acciones"))
+            except Exception as e:
+                return None, Respuesta(estado="no_hallada", url_inicial=url, detalle=f"acciones no es JSON válido: {e}"), "inspeccion"
+        datos = await self.nav.inspeccionar(base, esperar_ms=int(_p("esperar", "6000")), patron_enlaces=_p("enlaces"),
+                                            clic_texto=_p("clic"), acciones=acciones, selector_html=_p("html"))
+        texto = json.dumps(datos, ensure_ascii=False, indent=1)
+        doc = DocumentoOficial(corporacion=corp, identificador="inspeccion", url_oficial=url, texto=texto,
+                               sha256=sha256(texto.encode()), consultada_en=datetime.now(timezone.utc),
+                               canal="playwright", tipo_contenido="html", metadatos={"title": f"inspección de {base}"})
+        return doc, Respuesta(estado="ok", url_inicial=url, url_final=datos.get("url_final"), detalle="informe de inspección, no es una providencia"), "inspeccion"
 
     # ------------------------------------------------------------ verificar
     async def verificar_cita(self, corporacion: str, tipo_numero: Optional[str] = None, radicado: Optional[str] = None,

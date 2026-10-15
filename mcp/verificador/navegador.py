@@ -137,6 +137,14 @@ class Navegador:
             return {"estado": "bloqueada", "detalle": "dominio fuera de la lista autorizada"}
         try:
             async with self.pagina() as p:
+                peticiones: list[dict] = []
+
+                def _registrar(req):
+                    if req.resource_type in ("xhr", "fetch", "document") and len(peticiones) < 60:
+                        peticiones.append({"metodo": req.method, "url": req.url[:300], "tipo": req.resource_type,
+                                           "cuerpo": (req.post_data or "")[:300] or None})
+
+                p.on("request", _registrar)
                 resp = await p.goto(url, wait_until="domcontentloaded")
                 if clic_texto:
                     try:
@@ -175,7 +183,9 @@ class Navegador:
                             tag: e.tagName.toLowerCase(), id: e.id || null, clase: (e.className||'').toString().slice(0,80),
                             texto: (e.innerText||'').replace(/\\s+/g,' ').slice(0,300),
                             enlaces: [...e.querySelectorAll('a[href]')].slice(0,5).map(a => ({texto:(a.innerText||'').trim().slice(0,60), href:a.href})) }));
-                        return { titulo: document.title, campos, botones, enlaces, iframes, tablas, listas,
+                        const formularios = [...document.querySelectorAll('form')].slice(0,10).map(f => ({ id: f.id || null, action: f.action || null, metodo: f.method || null }));
+                        const scripts = [...document.querySelectorAll('script[src]')].map(s => s.src).slice(0,30);
+                        return { titulo: document.title, campos, botones, enlaces, iframes, tablas, listas, formularios, scripts,
                                  texto_inicio: (document.body.innerText||'').replace(/\\s+/g,' ').slice(0,1500),
                                  caracteres_texto: (document.body.innerText||'').length };
                     }""", patron_enlaces)
@@ -185,6 +195,7 @@ class Navegador:
                         datos["html_selector"] = (await loc.evaluate("e => e.outerHTML"))[:6000] if await loc.count() else "selector sin coincidencias"
                     except Exception as e:
                         datos["html_selector"] = f"error: {e.__class__.__name__}: {str(e)[:120]}"
+                datos["peticiones"] = peticiones
                 datos.update({"estado": "ok", "url_inicial": url, "url_final": p.url,
                               "codigo_http": resp.status if resp else None, "clic_error": clic_error,
                               "errores_acciones": errores_acciones})
