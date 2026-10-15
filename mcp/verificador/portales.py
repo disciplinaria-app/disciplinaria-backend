@@ -71,7 +71,9 @@ SELECTORES_WEBRELATORIA = {
     "boton_buscar": _env("WR_BOTON_BUSCAR", "button[id^='searchForm']:has-text('Buscar'):visible, button:has-text('Buscar'):visible"),
     "filas_resultado": _env("WR_FILAS", "tbody[id$='jurisTable_data'] tr, table[id$='jurisTable'] tbody tr, .ui-datatable-data tr"),
     "enlace_documento": _env("WR_ENLACE", "a[href*='.pdf'], a[href*='Documento'], a[id*='descarg'], a"),
-    "siguiente_pagina": _env("WR_SIGUIENTE", ".ui-paginator-next:not(.ui-state-disabled)"),
+    "siguiente_pagina": _env("WR_SIGUIENTE", ".ui-paginator-next:not(.ui-state-disabled), button.pageButton:has(.rightIcon)"),
+    "casilla_sentencia": _env("WR_CASILLA_SENTENCIA", "input[type='checkbox'][id^='searchForm'][id$=':0']"),
+    "mensaje_portal": _env("WR_MENSAJE", "[id$='dialogMessPanel']"),
 }
 
 SELECTORES_CC = {

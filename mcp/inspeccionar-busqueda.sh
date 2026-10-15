@@ -70,6 +70,13 @@ print(d.get("html_selector"))
 print()
 '
 }
-llamar_html "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml" \
-  '[{"tipo":"fill","selector":"xpath=//*[normalize-space(text())=\"Texto Completo\"]/following::input[1]","valor":"ilicitud sustancial"},{"tipo":"click","selector":"button[id^=\"searchForm\"]:has-text(\"Buscar\"):visible"},{"tipo":"esperar","ms":25000}]' \
-  5000 "[id='resultForm']"
+for variante in \
+  'texto-completo|[{"tipo":"click_texto","texto":"Sentencia"},{"tipo":"fill","selector":"xpath=//*[normalize-space(text())=\"Texto Completo\"]/following::input[1]","valor":"ilicitud sustancial"}]' \
+  'tema|[{"tipo":"click_texto","texto":"Sentencia"},{"tipo":"fill","selector":"input[id$=\":temaInput\"]","valor":"ilicitud sustancial"}]' \
+  'tema-comillas|[{"tipo":"click_texto","texto":"Sentencia"},{"tipo":"fill","selector":"input[id$=\":temaInput\"]","valor":"\"ilicitud sustancial\""}]' \
+  'ponente-vacio-solo-sentencia|[{"tipo":"click_texto","texto":"Sentencia"}]' ; do
+  nombre="${variante%%|*}"; acciones="${variante#*|}"
+  acciones="${acciones%]}"',{"tipo":"click","selector":"button[id^=\"searchForm\"]:has-text(\"Buscar\"):visible"},{"tipo":"esperar","ms":20000}]'
+  echo "--- variante: $nombre"
+  llamar_html "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml" "$acciones" 4000 "[id='resultForm:jurisTable']"
+done

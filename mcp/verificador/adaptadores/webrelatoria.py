@@ -49,14 +49,29 @@ class WebRelatoria(Adaptador):
                     await campo.fill(consulta, timeout=8000)
                 except Exception:
                     await campo.evaluate("(e, v) => { e.value = v; e.dispatchEvent(new Event('input', {bubbles:true})); e.dispatchEvent(new Event('change', {bubbles:true})); }", consulta)
-                await p.locator(SEL["boton_buscar"]).first.click()
+                # Tipo de providencia: marcar «Sentencia» si existe y no está marcada.
                 try:
-                    await p.wait_for_selector(SEL["filas_resultado"], timeout=25000)
+                    casilla = p.locator(SEL["casilla_sentencia"]).first
+                    if await casilla.count() and not await casilla.is_checked():
+                        await p.get_by_text("Sentencia", exact=True).first.click(timeout=3000)
                 except Exception:
+                    pass
+                await p.locator(SEL["boton_buscar"]).first.click()
+                filas_loc = p.locator(SEL["filas_resultado"] + ":not(.ui-datatable-empty-message)")
+                aviso = p.locator(SEL["mensaje_portal"])
+                for _ in range(30):
+                    if await filas_loc.count() > 0:
+                        break
+                    if await aviso.count() and (await aviso.first.inner_text()).strip():
+                        break
+                    await p.wait_for_timeout(1000)
+                await p.wait_for_timeout(1000)
+                if await filas_loc.count() == 0:
                     html = await p.content()
+                    msg = (await aviso.first.inner_text()).strip()[:200] if await aviso.count() else ""
                     return [], Respuesta(estado="sin_resultados", url_inicial=url, url_final=p.url,
                                          codigo=r.status if r else None, contenido=html.encode(),
-                                         tipo="text/html", detalle="no aparecieron filas de resultado")
+                                         tipo="text/html", detalle=f"el portal respondió: {msg}" if msg else "no aparecieron filas de resultado")
                 candidatos: list[Candidato] = []
                 paginas = 0
                 while len(candidatos) < max_resultados and paginas < 5:
@@ -83,6 +98,8 @@ class WebRelatoria(Adaptador):
         soup = BeautifulSoup(html, "lxml")
         salida: list[Candidato] = []
         for fila in soup.select(SEL["filas_resultado"]):
+            if "ui-datatable-empty-message" in (fila.get("class") or []):
+                continue
             texto = limpiar_texto(fila.get_text(" "))
             if len(texto) < 15:
                 continue

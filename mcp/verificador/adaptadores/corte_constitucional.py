@@ -80,11 +80,14 @@ class CorteConstitucional(Adaptador):
         try:
             async with self.nav.pagina() as p:
                 r = await p.goto(url, wait_until="domcontentloaded")
-                try:
-                    await p.wait_for_selector("#tabla-resultado tr a[href*='/relatoria/'], text=/No se encontraron resultados/i", timeout=25000)
-                except Exception:
-                    pass
-                await p.wait_for_timeout(1500)
+                # Esperar a que aparezcan filas con enlaces o el aviso de «sin resultados».
+                filas = p.locator("#tabla-resultado a[href*='/relatoria/']")
+                aviso = p.get_by_text("No se encontraron resultados", exact=False)
+                for _ in range(30):
+                    if await filas.count() > 0 or await aviso.count() > 0:
+                        break
+                    await p.wait_for_timeout(1000)
+                await p.wait_for_timeout(1000)
                 html = await p.content()
                 candidatos = self._extraer_candidatos(html, p.url, max_resultados)
                 estado = "ok" if candidatos else "sin_resultados"
