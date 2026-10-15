@@ -74,7 +74,10 @@ class Servicio:
                 self.corpus.guardar(doc)
                 return doc, resp2, doc.canal
             resp = resp2
-        if resp.estado in ("ok", "sin_resultados"):
+        directas_negativas = bool(destinos) and ultima is not None and ultima.estado == "sin_resultados"
+        if resp.estado in ("ok", "sin_resultados") or (resp.estado == "parcial" and directas_negativas):
+            if resp.estado == "parcial":
+                resp.detalle = (resp.detalle or "") + " · el buscador no pudo ejecutarse"
             resp.estado = "no_hallada"
             resp.detalle = ("ni las rutas directas ni el buscador oficial devolvieron un documento que muestre el "
                             "identificador; puede que el identificador esté mal escrito o que el portal haya cambiado"

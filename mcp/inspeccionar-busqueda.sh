@@ -44,3 +44,32 @@ llamar "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml
   'pdf|Documento|descarg|xhtml' 6000
 echo "### C. Consejo de Estado — WebRelatoria tradicional (campos)"
 llamar "https://servicios.consejodeestado.gov.co/WebRelatoria/ce/index.xhtml" '[]' 'pdf|Documento' 6000
+echo "### D. CNDJ — texto completo, espera larga y HTML de la tabla de resultados"
+llamar_html() {
+  local args
+  args=$(python3 -c 'import json,sys; print(json.dumps({"url":sys.argv[1],"acciones":json.loads(sys.argv[2]),"esperar_ms":int(sys.argv[3]),"selector_html":sys.argv[4]}))' "$1" "$2" "$3" "$4")
+  curl -s -X POST "$MCP" -H 'Content-Type: application/json' -H 'Accept: application/json, text/event-stream' \
+    -d "{\"jsonrpc\":\"2.0\",\"id\":1,\"method\":\"tools/call\",\"params\":{\"name\":\"inspeccionar_pagina\",\"arguments\":$args}}" \
+  | python3 -c '
+import json,sys
+r=json.load(sys.stdin); res=r.get("result",{}); d=res.get("structuredContent") or {}
+if not d:
+    for c in res.get("content",[]):
+        if c.get("type")=="text":
+            try: d=json.loads(c["text"]); break
+            except Exception: pass
+print("== URL final:", d.get("url_final"), "| estado", d.get("estado"), d.get("detalle",""), "| errores:", d.get("errores_acciones"))
+print("   texto:", (d.get("texto_inicio") or "")[:600])
+print("   TABLAS (todas):")
+for t in d.get("tablas",[]):
+    print("     id=",t.get("id"),"filas=",t.get("filas"))
+    for m in t.get("muestra",[]): print("        |", m)
+    for e in t.get("enlaces_fila",[]): print("        a:", e.get("texto"), "->", e.get("href"), "id=", e.get("id"))
+print("   HTML_SELECTOR:")
+print(d.get("html_selector"))
+print()
+'
+}
+llamar_html "https://jurisprudencia.ramajudicial.gov.co/WebRelatoria/cndj/index.xhtml" \
+  '[{"tipo":"fill","selector":"xpath=//*[normalize-space(text())=\"Texto Completo\"]/following::input[1]","valor":"ilicitud sustancial"},{"tipo":"click","selector":"button[id^=\"searchForm\"]:has-text(\"Buscar\"):visible"},{"tipo":"esperar","ms":25000}]' \
+  5000 "[id='resultForm']"

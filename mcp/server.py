@@ -115,11 +115,13 @@ async def diagnosticar_portales() -> dict:
     "del texto). Sirve para ajustar los selectores cuando un portal cambia. Solo dominios oficiales autorizados. "
     "clic_texto: texto de un enlace o botón que se pulsa antes de inspeccionar. acciones: lista de pasos "
     "[{tipo:fill,selector,valor},{tipo:select,selector,valor},{tipo:click,selector},{tipo:click_texto,texto},"
-    "{tipo:esperar,ms},{tipo:esperar_selector,selector,ms}] que se ejecutan antes de inspeccionar."
+    "{tipo:esperar,ms},{tipo:esperar_selector,selector,ms}] que se ejecutan antes de inspeccionar. "
+    "selector_html: devuelve el HTML (hasta 6000 caracteres) del primer elemento que coincida."
 ))
 async def inspeccionar_pagina(url: str, esperar_ms: int = 4000, patron_enlaces: Optional[str] = None,
-                              clic_texto: Optional[str] = None, acciones: Optional[list[dict]] = None) -> dict:
-    return await servicio.nav.inspeccionar(url, esperar_ms, patron_enlaces, clic_texto, acciones)
+                              clic_texto: Optional[str] = None, acciones: Optional[list[dict]] = None,
+                              selector_html: Optional[str] = None) -> dict:
+    return await servicio.nav.inspeccionar(url, esperar_ms, patron_enlaces, clic_texto, acciones, selector_html)
 
 
 # --- Aplicación ASGI con autenticación por llave --------------------------------

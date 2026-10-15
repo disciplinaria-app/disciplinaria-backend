@@ -128,7 +128,8 @@ class Navegador:
         return errores
 
     async def inspeccionar(self, url: str, esperar_ms: int = 4000, patron_enlaces: Optional[str] = None,
-                           clic_texto: Optional[str] = None, acciones: Optional[list[dict]] = None) -> dict:
+                           clic_texto: Optional[str] = None, acciones: Optional[list[dict]] = None,
+                           selector_html: Optional[str] = None) -> dict:
         """Describe una página renderizada: URL final, título, campos de formulario,
         botones, enlaces (filtrados por patrón) e iframes. Herramienta de
         mantenimiento para ajustar selectores cuando un portal cambia."""
@@ -178,6 +179,12 @@ class Navegador:
                                  texto_inicio: (document.body.innerText||'').replace(/\\s+/g,' ').slice(0,1500),
                                  caracteres_texto: (document.body.innerText||'').length };
                     }""", patron_enlaces)
+                if selector_html:
+                    try:
+                        loc = p.locator(selector_html).first
+                        datos["html_selector"] = (await loc.evaluate("e => e.outerHTML"))[:6000] if await loc.count() else "selector sin coincidencias"
+                    except Exception as e:
+                        datos["html_selector"] = f"error: {e.__class__.__name__}: {str(e)[:120]}"
                 datos.update({"estado": "ok", "url_inicial": url, "url_final": p.url,
                               "codigo_http": resp.status if resp else None, "clic_error": clic_error,
                               "errores_acciones": errores_acciones})

@@ -16,7 +16,7 @@ from .texto import normalizar, quitar_tildes
 
 # Sentencias de la Corte Constitucional: T-123/19, T-123 de 2019, SU-107/2024, C-1-93, A-045/21
 _RE_CC = re.compile(
-    r"\b(?P<tipo>SU|T|C|A|SL)\s*-?\s*(?P<num>\d{1,4})\s*(?:/|-|\s+de\s+|\s+del\s+)\s*(?P<anio>\d{2,4})\b",
+    r"\b(?P<tipo>SU|T|C|A|SL)\s*[.\-]?\s*(?P<num>\d{1,4})\s*(?:/|-|\s+de\s+|\s+del\s+)\s*(?P<anio>\d{2,4})\b",
     re.I,
 )
 # Radicados con dígitos largos (CSJ, CE, CNDJ): 11001-03-15-000-2019-01234-00, 110010315000201901234
