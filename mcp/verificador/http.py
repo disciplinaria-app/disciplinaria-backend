@@ -54,7 +54,20 @@ class Respuesta:
 
     @property
     def texto(self) -> str:
-        return self.contenido.decode("utf-8", errors="replace")
+        """Decodifica respetando el charset declarado (cabecera o <meta>); las
+        relatorías antiguas sirven ISO-8859-1/Windows-1252 sin cabecera."""
+        cabecera = (self.tipo or "").lower()
+        inicio = self.contenido[:4000].lower()
+        for marca, codec in (("iso-8859-1", "cp1252"), ("windows-1252", "cp1252"), ("latin1", "cp1252"), ("utf-8", "utf-8")):
+            if marca.encode() in inicio or marca in cabecera:
+                try:
+                    return self.contenido.decode(codec)
+                except UnicodeDecodeError:
+                    break
+        try:
+            return self.contenido.decode("utf-8")
+        except UnicodeDecodeError:
+            return self.contenido.decode("cp1252", errors="replace")
 
     @property
     def es_pdf(self) -> bool:

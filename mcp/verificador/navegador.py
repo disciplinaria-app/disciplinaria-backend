@@ -166,8 +166,16 @@ class Navegador:
                         const enlaces = [...document.querySelectorAll('a[href]')].map(a => ({ texto: (a.innerText||'').trim().slice(0,80), href: a.href }))
                             .filter(a => !re || re.test(a.href) || re.test(a.texto)).slice(0,80);
                         const iframes = [...document.querySelectorAll('iframe')].map(f => f.src).slice(0,10);
-                        return { titulo: document.title, campos, botones, enlaces, iframes,
-                                 texto_inicio: (document.body.innerText||'').replace(/\\s+/g,' ').slice(0,600),
+                        const tablas = [...document.querySelectorAll('table')].filter(t => t.rows.length > 0).slice(0,8).map(t => ({
+                            id: t.id || null, filas: t.rows.length,
+                            muestra: [...t.rows].slice(0,4).map(r => (r.innerText||'').replace(/\\s+/g,' ').trim().slice(0,220)),
+                            enlaces_fila: [...t.querySelectorAll('a[href]')].slice(0,6).map(a => ({texto:(a.innerText||'').trim().slice(0,60), href:a.href, id:a.id||null})) }));
+                        const listas = [...document.querySelectorAll('ul, ol, div[class*=result], div[class*=card], article')].filter(e => (e.innerText||'').length > 200).slice(0,6).map(e => ({
+                            tag: e.tagName.toLowerCase(), id: e.id || null, clase: (e.className||'').toString().slice(0,80),
+                            texto: (e.innerText||'').replace(/\\s+/g,' ').slice(0,300),
+                            enlaces: [...e.querySelectorAll('a[href]')].slice(0,5).map(a => ({texto:(a.innerText||'').trim().slice(0,60), href:a.href})) }));
+                        return { titulo: document.title, campos, botones, enlaces, iframes, tablas, listas,
+                                 texto_inicio: (document.body.innerText||'').replace(/\\s+/g,' ').slice(0,1500),
                                  caracteres_texto: (document.body.innerText||'').length };
                     }""", patron_enlaces)
                 datos.update({"estado": "ok", "url_inicial": url, "url_final": p.url,

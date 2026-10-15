@@ -191,13 +191,22 @@ def localizar_pasaje(texto: str, consulta: str, ventana: int = 900) -> tuple[str
         p = int(pos * ratio)
         ini, fin = max(0, p - ventana // 2), min(len(texto), p + ventana // 2)
         return texto[ini:fin], p, 1.0
+    # Sin coincidencia literal: la ventana que cubre más términos de la consulta
+    # (cobertura), con un pequeño premio a la densidad para desempatar.
+    tq = _tokens(consulta)
+    if not tq:
+        return "", -1, 0.0
     mejor = ("", -1, 0.0)
-    paso = max(ventana // 2, 1)
+    paso = max(ventana // 3, 1)
     for ini in range(0, max(len(texto) - ventana, 0) + 1, paso):
         frag = texto[ini:ini + ventana]
-        s = similitud(frag, consulta)
+        tw = _tokens(frag)
+        if not tw:
+            continue
+        cobertura = len(tq & tw) / len(tq)
+        s = cobertura + 0.05 * (len(tq & tw) / len(tw))
         if s > mejor[2]:
-            mejor = (frag, ini + ventana // 2, s)
+            mejor = (frag, ini + ventana // 2, min(s, 1.0))
     return mejor
 
 
