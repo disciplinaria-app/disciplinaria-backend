@@ -49,6 +49,6 @@ No incorporar «notifíquese, comuníquese, cúmplase» o información de recurs
 
 Incluir estado y alcance; cambios de tesis, norma, fuente, estructura o dato; limitaciones esenciales; y ubicación del texto o archivo final. Adjuntar registro de fuentes y cobertura cuando aporte trazabilidad. No convertirlo en una certificación de infalibilidad ni en un sustituto del proyecto.
 
-No dejar marcadores internos como `[VERIFICAR]`, `[PENDIENTE]`, `TODO` o `TBD` en una versión declarada cerrada. Cuando una cita textual auténtica contenga algo semejante, examinar el caso y documentar la excepción en vez de alterar la cita para pasar un detector.
+No dejar marcadores internos como `[VERIFICAR]`, `[PENDIENTE]`, `TODO` o `TBD` en una versión declarada cerrada. Antes de cerrar, cotejar el registro del barrido de la Fase 0: cada marca que traía el borrador debe figurar como resuelta, reformulada, retirada o pendiente con causa. Eliminar una marca sin resolver lo que señalaba es un defecto de cierre, aunque el texto ya no la muestre. Cuando una cita textual auténtica contenga algo semejante, examinar el caso y documentar la excepción en vez de alterar la cita para pasar un detector.
 
 El auditor local es apoyo estructural: una salida sin errores solo indica que no detectó inconsistencias en el registro y texto suministrados. No conoce el expediente completo ni confirma la verdad de lo declarado.

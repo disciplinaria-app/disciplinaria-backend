@@ -62,9 +62,11 @@ Leer el borrador completo y las piezas esenciales disponibles. Construir un inve
 
 Registrar qué está completo, qué debe preservarse, qué está incompleto y qué requiere reconstrucción. Inventariar las citas existentes sin darlas por correctas. No importar datos de otros asuntos desde memoria, plantillas o ejemplos.
 
+Barrer el borrador en busca de marcas y notas internas de quien lo redactó (`[VERIFICAR…]`, `[PENDIENTE]`, «no encontré jurisprudencia», «falta cita», `XXX`, `???`, comentarios de Word, control de cambios, texto resaltado) siguiendo `references/lectura-expediente.md` §1 bis. Cada una se registra con ubicación y texto literal y se trata como tarea: una nota de falta de soporte revela una afirmación sin respaldo que debe sustentarse en fuente oficial, reformularse o retirarse; nunca se borra la nota dejando la afirmación intacta.
+
 Usar lectura por rangos y seguir paginación; ante tablas, firmas, escaneos o texto defectuoso, inspeccionar la imagen. Usar OCR solo como último recurso y contrastar visualmente los datos decisivos. Registrar la limitación real sin convertirla en ausencia probatoria.
 
-**Puerta G0:** no afirmar lectura integral si quedan piezas esenciales sin revisar. Un faltante solo bloquea el cierre cuando impide resolver conforme al régimen y a las reglas probatorias; no cuando la falta de acreditación tiene una consecuencia jurídica que sí puede motivarse.
+**Puerta G0:** no afirmar lectura integral si quedan piezas esenciales sin revisar, ni pasar a la fase siguiente sin haber registrado el resultado del barrido de marcas (aunque sea «ninguna, tras barrido completo»). Un faltante solo bloquea el cierre cuando impide resolver conforme al régimen y a las reglas probatorias; no cuando la falta de acreditación tiene una consecuencia jurídica que sí puede motivarse.
 
 ## Fase 1 — Reconstrucción fáctica y mapa de controversia
 

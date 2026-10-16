@@ -20,7 +20,11 @@ GROUPS = ('piezas', 'hechos', 'normas', 'citas', 'argumentos', 'problemas',
           'determinaciones', 'apartados')
 FIELDS = ('corporacion', 'sala', 'ponente', 'identificador', 'fecha')
 LIMIT = 8 * 1024 * 1024
-MARKERS = re.compile(r'\[(?:VERIFICAR|PENDIENTE|COMPLETAR)(?::[^\]]*)?\]|\b(?:TODO|TBD)\b', re.I)
+MARKERS = re.compile(
+    r'\[(?:VERIFICAR|PENDIENTE|COMPLETAR|REVISAR|CONFIRMAR|CITA)(?::[^\]]*)?\]'
+    r'|\[[^\]]{0,120}?(?:no encontr|falta cita|sin soporte|verificar)[^\]]{0,120}\]'
+    r'|\b(?:TODO|TBD|XXX)\b|\?\?\?|\bT-xxx\b|\b20xx\b|Rad\.\s*_{2,}',
+    re.I)
 DISCLAIMER = ('Control estructural sobre datos declarados y texto suministrado. '
               'No verifica autenticidad, verdad, calidad de la prueba, vigencia, '
               'ratio, exhaustividad del expediente ni suficiencia juridica.')

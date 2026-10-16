@@ -13,7 +13,7 @@ La skill aporta el procedimiento; el Protocolo Despacho LM aporta los controles,
 
 ## Principio rector: nunca inventar
 
-No se fabrican sentencias, radicados, ponentes, fechas, artículos ni textos normativos. Una cita inexistente o un radicado errado exponen al despacho y a quien firma. Por eso toda cita se verifica en la fuente oficial antes de insertarse; lo que no se logra verificar se marca `[VERIFICAR: …]` y se reporta, nunca se presenta como confirmado; y los salvamentos de voto no se citan como autoridad salvo que el usuario los invoque como contraste. La regla alcanza a la propia skill: sus plantillas no traen números de sentencia ni remisiones normativas que deban darse por buenas; la jurisprudencia se obtiene siempre en la Fase 2 y los artículos se leen en su fuente en cada encargo.
+No se fabrican sentencias, radicados, ponentes, fechas, artículos ni textos normativos. Una cita inexistente o un radicado errado exponen al despacho y a quien firma. Por eso toda cita se verifica en la fuente oficial antes de insertarse; lo que no se logra verificar se marca `[VERIFICAR: …]` y se reporta, nunca se presenta como confirmado; las marcas y notas que el borrador ya trae (una cita sin verificar, un «no encontré jurisprudencia») se detectan en la Fase 0 y se resuelven o se informan, nunca se pasan por alto; y los salvamentos de voto no se citan como autoridad salvo que el usuario los invoque como contraste. La regla alcanza a la propia skill: sus plantillas no traen números de sentencia ni remisiones normativas que deban darse por buenas; la jurisprudencia se obtiene siempre en la Fase 2 y los artículos se leen en su fuente en cada encargo.
 
 ## Archivos de referencia
 
@@ -32,7 +32,21 @@ No se fabrican sentencias, radicados, ponentes, fechas, artículos ni textos nor
 
 1. Leer el documento completo. En un expediente largo, leer en este orden: parte resolutiva de primera instancia o acto impugnado, recurso o escrito que fija el objeto, cargos o problema planteado, pruebas, antecedentes.
 2. Identificar: tipo de acto y régimen; instancia y etapa (segunda instancia, consulta, desacato, nulidad); qué está completo y qué falta; problema jurídico (planteado, bien planteado, ausente); jurisprudencia y normas que el documento **ya cita** (se conservan salvo error verificado y se someten a verificación como cualquier otra cita); argumentos del recurrente o de las partes que la motivación debe responder.
-3. Entregar el diagnóstico en este bloque breve, en el chat:
+3. **Barrido de marcas y notas internas del borrador (obligatorio, antes del diagnóstico).** Recorrer el documento completo, incluidas notas al pie, comentarios de Word, control de cambios y texto resaltado o en color, en busca de toda señal dejada por quien lo redactó:
+
+   - notas entre corchetes o paréntesis dirigidas al redactor: `[VERIFICAR…]`, `[PENDIENTE]`, `[COMPLETAR]`, `[CITA]`, `[REVISAR]`, `[CONFIRMAR]`, «no encontré jurisprudencia», «falta cita», «sin soporte», «OJO», «ampliar», «desarrollar»;
+   - datos de relleno: `XXX`, `???`, «T-xxx de 20xx», «(fecha)», «[radicado]», «Rad. ___», «M.P. …», párrafos o citas truncados;
+   - citas incompletas o sin alguno de sus cinco datos.
+
+   Cada hallazgo se registra con su ubicación y su texto literal, y se trata como una tarea, no como ruido de edición:
+
+   1. **Una nota que dice que no se halló soporte jurisprudencial o normativo revela una afirmación sin respaldo.** Se busca el soporte en fuente oficial. Si aparece, se cita verificado. Si no aparece, la afirmación se reformula con el alcance que las fuentes efectivamente sostienen, o se retira, y se informa. Nunca se borra la nota dejando intacta la afirmación que señalaba.
+   2. Una cita incompleta o con datos de relleno se completa desde la fuente oficial o queda marcada `[VERIFICAR: …]` y reportada.
+   3. Una instrucción interna («desarrollar», «ampliar con la línea») se ejecuta o se informa como no ejecutada, con la razón.
+   4. Ninguna marca se elimina en silencio, y ninguna se conserva en el texto final sin figurar en el informe.
+
+   Si el barrido no encuentra nada, el diagnóstico lo dice expresamente: «ninguna, tras barrido completo». El barrido se repite sobre el texto final antes de entregar.
+4. Entregar el diagnóstico en este bloque breve, en el chat:
 
 ```
 **Diagnóstico**
@@ -42,6 +56,7 @@ No se fabrican sentencias, radicados, ponentes, fechas, artículos ni textos nor
 - Problema jurídico: [planteado como…] / [ausente; se propone: …]
 - Argumentos de las partes por responder: [lista corta]
 - Jurisprudencia y normas ya citadas: [n citas; se verificarán]
+- Marcas y notas internas del borrador: [ubicación · texto literal · tarea que revela] / [ninguna, tras barrido completo]
 - Falta por construir: [secciones]
 ```
 
@@ -104,7 +119,8 @@ El texto destinado a la providencia va en prosa continua, sin viñetas, en terce
 **Informe de inserción**
 - Párrafos insertados: [sección y posición]
 - Citas verificadas: tabla con corporación · sala · ponente · número/radicado · fecha · fuente abierta (URL oficial, verificador MCP o documento aportado por el usuario) · estado
-- Marcas [VERIFICAR] pendientes: [lista o "ninguna"]
+- Marcas del borrador recibido: [cada una → resuelta (cómo y con qué fuente) / afirmación reformulada o retirada / subsiste (por qué)] o "ninguna, tras barrido completo"
+- Marcas [VERIFICAR] pendientes en el texto entregado: [lista o "ninguna", tras repetir el barrido]
 - Normas citadas y versión aplicable: [artículo · versión aplicada según nota de modificación · observación]
 - Tesis contraria considerada y cómo se cerró: [dos líneas]
 - Premortem: [punto más vulnerable y qué se reforzó]
@@ -116,6 +132,7 @@ Cerrar con: "¿Deseas que aplique la corrección de estilo editorial (`lectura-j
 ## Lista de control final
 
 - Documento leído completo; jurisprudencia y normas preexistentes inventariadas y verificadas.
+- Barrido de marcas hecho sobre el borrador recibido y repetido sobre el texto final; cada nota interna resuelta o informada; ninguna afirmación que el redactor marcó como sin soporte quedó en pie sin fuente verificada.
 - Materia identificada y corporación de cierre consultada primero; subreglas de otras corporaciones declaradas como tales.
 - Toda cita con sus cinco datos tomados de la página o el PDF oficial (o del conector «Verificador jurisprudencial», con `verificar_cita` sin campos discrepantes, o de un documento aportado por el usuario y así declarado); ninguna desde un resumen, boletín o blog; ninguna de memoria.
 - Doble capa ejecutada por subregla, con la ventana de cuatro años calculada desde la fecha de corte y el hallazgo clasificado; la línea fundadora conservada.

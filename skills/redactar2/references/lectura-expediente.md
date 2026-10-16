@@ -10,6 +10,23 @@ Para cada pieza registrar identificador estable, nombre, procedencia, versión, 
 
 Si el archivo contiene imágenes, tablas, formularios, sellos o notas al pie relevantes, inspeccionarlos visualmente. No deducir una firma ni la fecha de radicación de texto incompleto. Distinguir fecha de creación, presentación, recepción, reparto, expedición, notificación y ejecutoria.
 
+## 1 bis. Barrido de marcas y notas internas del borrador
+
+**Barrido de marcas y notas internas del borrador (obligatorio, antes del diagnóstico).** Recorrer el documento completo, incluidas notas al pie, comentarios de Word, control de cambios y texto resaltado o en color, en busca de toda señal dejada por quien lo redactó:
+
+- notas entre corchetes o paréntesis dirigidas al redactor: `[VERIFICAR…]`, `[PENDIENTE]`, `[COMPLETAR]`, `[CITA]`, `[REVISAR]`, `[CONFIRMAR]`, «no encontré jurisprudencia», «falta cita», «sin soporte», «OJO», «ampliar», «desarrollar»;
+- datos de relleno: `XXX`, `???`, «T-xxx de 20xx», «(fecha)», «[radicado]», «Rad. ___», «M.P. …», párrafos o citas truncados;
+- citas incompletas o sin alguno de sus cinco datos.
+
+Cada hallazgo se registra con su ubicación y su texto literal, y se trata como una tarea, no como ruido de edición:
+
+1. **Una nota que dice que no se halló soporte jurisprudencial o normativo revela una afirmación sin respaldo.** Se busca el soporte en fuente oficial. Si aparece, se cita verificado. Si no aparece, la afirmación se reformula con el alcance que las fuentes efectivamente sostienen, o se retira, y se informa. Nunca se borra la nota dejando intacta la afirmación que señalaba.
+2. Una cita incompleta o con datos de relleno se completa desde la fuente oficial o queda marcada `[VERIFICAR: …]` y reportada.
+3. Una instrucción interna («desarrollar», «ampliar con la línea») se ejecuta o se informa como no ejecutada, con la razón.
+4. Ninguna marca se elimina en silencio, y ninguna se conserva en el texto final sin figurar en el informe.
+
+Si el barrido no encuentra nada, el diagnóstico lo dice expresamente: «ninguna, tras barrido completo». El barrido se repite sobre el texto final antes de entregar.
+
 ## 2. Construir tres registros de trabajo
 
 **Identidades y datos protegidos:** nombre exacto, identificador, calidad procesal, entidad, cargo, radicado, cifra o fecha, con fuente y localizador. Si hay variantes, conservar cada una y resolver con evidencia; no armonizar silenciosamente ni asumir que son la misma persona.

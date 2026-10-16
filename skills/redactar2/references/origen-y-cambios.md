@@ -70,3 +70,10 @@ No se modificaron el auditor, sus tests ni la especificación del MCP. `assets/o
 - El conector verificador pasó de especificación a servicio desplegado (Google Cloud Run, conector «Verificador jurisprudencial»). `mcp-y-herramientas.md` describe sus operaciones reales, parámetros y estado por portal.
 - Corte Constitucional comprobada en vivo de extremo a extremo; Corte Suprema y Consejo de Estado alcanzables con búsqueda en prueba; CNDJ desactivada en el servidor hasta autorización de la entidad.
 - Fase 3 indica el orden de uso del conector y la vía de respaldo en navegador.
+
+## Versión 1.4 (16 de octubre de 2026)
+
+- Barrido obligatorio de marcas y notas internas del borrador recibido (Fase 0 y `lectura-expediente.md` §1 bis), con la regla de que una nota de falta de soporte revela una afirmación que debe sustentarse, reformularse o retirarse. Motivo: un borrador con «[VERIFICAR: no encontré jurisprudencia]» pasó sin advertencia.
+- Puerta G0 exige registrar el resultado del barrido; el control de cierre lo coteja.
+- Auditor: detecta también notas entre corchetes de falta de soporte, `XXX`, `???`, «T-xxx», «20xx» y «Rad. ___», sin marcar `[sic]` ni `[...]`.
+- Escenarios adversariales 28 y 29.

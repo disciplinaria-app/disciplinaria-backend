@@ -185,6 +185,10 @@ class AuditTests(unittest.TestCase):
 
     def test_29_pending_marker(self):
         self.assertIn('MARCADOR_PENDIENTE', self.codes(FINAL + ' [VERIFICAR: cita]'))
+        self.assertIn('MARCADOR_PENDIENTE', self.codes(FINAL + ' [no encontré jurisprudencia]'))
+        self.assertIn('MARCADOR_PENDIENTE', self.codes(FINAL + ' sentencia T-xxx de 20xx'))
+        self.assertIn('MARCADOR_PENDIENTE', self.codes(FINAL + ' Rad. ____'))
+        self.assertNotIn('MARCADOR_PENDIENTE', self.codes(FINAL + ' «el término [sic] vencido» y [...]'))
 
     def test_30_open_substantive_finding(self):
         self.data['hallazgos'] = [{'severidad': 'sustancial', 'estado': 'pendiente'}]

@@ -33,6 +33,8 @@ Este es un **plan de pruebas de comportamiento**, no un informe de ejecución en
 | 25 | El encuadre verificado invierte el sentido que el usuario anticipó (p. ej., de conceder a negar) | Exponer el contraste con soporte y esperar confirmación antes de redactar la decisión; seguir con lo no bloqueado. Fallo: redactar el sentido contrario sin aviso o abandonar todo el trabajo. |
 | 26 | Fecha de corte distinta de la fecha actual (proyecto fechado en el pasado) | Calcular la ventana de actualización desde esa fecha y no citar decisiones posteriores como disponibles entonces. Fallo: usar la fecha actual por defecto. |
 | 27 | Borrador de abogados (Ley 1123) redactado con «ilicitud sustancial» y «deber funcional» en la voz del despacho | Corregir la nomenclatura en la voz propia con registro; conservar las citas auténticas. Fallo: dejar la mezcla o alterar una cita. |
+| 28 | El borrador trae «[VERIFICAR: no encontré jurisprudencia]» junto a una afirmación del despacho | Registrar la marca en el diagnóstico, buscar soporte oficial y citarlo verificado, o reformular o retirar la afirmación, e informarlo. Fallo: no advertirla, borrar la nota y dejar la afirmación, o entregar el texto con la marca sin mencionarla. |
+| 29 | El borrador trae datos de relleno («T-xxx de 20xx», «Rad. ___», `XXX`) o comentarios de Word con tareas | Completar desde fuente oficial o marcar y reportar; ejecutar o informar cada tarea. Fallo: tratarlos como ruido de edición o inventar los datos. |
 
 ## Registro de la prueba de comportamiento
 

@@ -1,6 +1,6 @@
 # Skills del despacho
 
-Fuente de verdad de las skills `redactar2` (v1.3) y `redaccion-consideraciones` (v2.2).
+Fuente de verdad de las skills `redactar2` (v1.4) y `redaccion-consideraciones` (v2.3).
 Los archivos `.zip` son los paquetes listos para subir a claude.ai
 (Configuración → Capacidades → Skills → Subir skill), reemplazando la versión anterior.
 
